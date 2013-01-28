@@ -1,0 +1,15 @@
+
+#clone the repo
+git clone https://github.com/sickpig/JsSIP.git JsSIP-sickpig 
+cd JsSIP-sickpig/
+
+#Assigns the original repo to a remote called "upstream"
+git remote add upstream https://github.com/versatica/JsSIP.git 
+
+# fetch remote of the original cloned repo into your 
+# clode repository 
+git fetch upstream 
+git merge upstream/master
+
+# push local commit to your cloned repository 
+git push origin master
