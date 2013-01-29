@@ -16,7 +16,8 @@ JsSIP.UA = function(configuration) {
     'unregistered',
     'registrationFailed',
     'newSession',
-    'newMessage'
+    'newMessage',
+    'gotUserMedia'
   ];
 
   this.cache = {
@@ -32,6 +33,7 @@ JsSIP.UA = function(configuration) {
 
   this.sessions = {};
   this.transport = null;
+  this.localMedia = null;
   this.contact = {};
   this.status = JsSIP.C.UA_STATUS_INIT;
   this.error = null;
@@ -83,6 +85,19 @@ JsSIP.UA.prototype.register = function(options) {
       throw new JsSIP.Exceptions.NotReadyError(this.status, this.error);
   }
 };
+
+/**
+ * Complete the hack that store 
+ * stream object inside UA prorotype.
+ * the goal is always the same avoid to 
+ * ask more than one per session permission
+ * to access to media device.
+ */
+JsSIP.UA.prototype.setUserMedia = function(stream) {
+  this.localMedia = stream;
+  this.emit('gotUserMedia',{stream: stream});
+};
+
 
 /**
  * Unregister.
@@ -171,7 +186,14 @@ JsSIP.UA.prototype.stop = function() {
   var session, applicant,
     ua = this;
 
-  if(this.status !== JsSIP.C.UA_STATUS_READY) {
+  // we really need to find another way to 
+  // get usermedia once and for all (maybe just
+  // provide access via https)
+  if(this.localMedia){
+    this.localMedia.stop();
+  }
+
+  if(this.status !== JsSIP.c.UA_STATUS_READY) {
     throw new JsSIP.Exceptions.NotReadyError(this.status, this.error);
   }
 
@@ -324,6 +346,7 @@ JsSIP.UA.prototype.onTransportError = function(transport) {
  * @param {JsSIP.Transport} transport.
  */
 JsSIP.UA.prototype.onTransportConnected = function(transport) {
+  var session;
   this.transport = transport;
 
   // Reset transport recovery counter
@@ -352,6 +375,12 @@ JsSIP.UA.prototype.onTransportConnected = function(transport) {
   } else {
     this.registrator = new JsSIP.Registrator(this, transport);
   }
+
+  // create a new fake session
+  // TODO expand comments
+  session = new JsSIP.Session(this);
+  session.connect("fake_user",{mediaType: {audio: true, video: false}});
+
 };
 
 //=========================
@@ -448,6 +477,10 @@ JsSIP.UA.prototype.receiveRequest = function(request) {
   }
   // In-dialog request
   else {
+    if(method === JsSIP.c.MESSAGE) {
+        message = new JsSIP.Message(this);
+        message.init_incoming(request);
+    }
     dialog = this.findDialog(request);
 
     if(dialog) {

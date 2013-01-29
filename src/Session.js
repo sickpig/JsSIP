@@ -23,6 +23,10 @@ JsSIP.Session = function(ua) {
   this.dialog = null;
   this.earlyDialogs = [];
   this.mediaSession = null;
+  // we need this to avoid granting access
+  // to media device every time we make a call
+  this.localMedia = ua.localMedia;
+
 
   // Session Timers
   // A BYE will be sent if ACK for the response establishing the session is not received
@@ -930,6 +934,29 @@ JsSIP.Session.prototype.cancel = function(reason) {
 };
 
 /**
+ * implement DTMF sending using RFC 2976 INFO message
+ */
+
+JsSIP.Session.prototype.sendDTMFinfo = function(digit) {
+  var self = this,
+      request_sender,
+      extraHeaders = [
+        'Content-Type: application/dtmf-relay',
+      'Contact: <'+ this.contact + ';ob>'];
+  if(!digit.toString().match(/[0-9A-D#*]/i)) {
+    return false;
+  }
+  if(this.dialog){
+    this.request = this.dialog.createRequest(JsSIP.C.INFO, extraHeaders);
+    this.request.body = "Signal="+digit+"\r\nDuration=120";
+    request_sender = new JsSIP.RequestSender(self, this.ua);
+    // Send the request
+    request_sender.send();
+  }
+};
+
+
+/**
  * Send a DTMF
  *
  * @param {String|Number} tones
@@ -995,7 +1022,6 @@ JsSIP.Session.prototype.sendDTMF = function(tones, options) {
     },
     interToneGap
   );
-};
 
 /**
  * Initial Request Sender

@@ -18,6 +18,7 @@ JsSIP.MediaSession = function(session, selfView, remoteView) {
   this.remoteView = remoteView || null;
   this.localMedia = null;
   this.peerConnection = null;
+  this.userMedia = null;
 };
 
 JsSIP.MediaSession.prototype = {
@@ -99,7 +100,8 @@ JsSIP.MediaSession.prototype = {
       onMediaFailure(e);
     }
 
-    self.getUserMedia({'audio':true, 'video':true}, onGetUserMediaSuccess, onGetUserMediaFailure);
+    // disable video calls (temporary)
+    self.getUserMedia({'audio':true, 'video':false}, onGetUserMediaSuccess, onGetUserMediaFailure);
    },
 
   /**
@@ -170,9 +172,11 @@ JsSIP.MediaSession.prototype = {
     if(this.peerConnection) {
       this.peerConnection.close();
 
-      if(this.localMedia) {
-        this.localMedia.stop();
-      }
+      //disable aming to avoid granting media 
+      //access fir every new call
+      //if(this.localMedia) {
+      //  this.localMedia.stop();
+      //}
     }
   },
 
@@ -189,9 +193,11 @@ JsSIP.MediaSession.prototype = {
 
       //Save the localMedia in order to revoke access to devices later.
       self.localMedia = stream;
+      self.session.localMedia = stream;
+      self.session.ua.setUserMedia(stream);
 
       // Attach the stream to the view if it exists.
-      if (self.selfView){
+      if (self.selfView) {
         self.selfView.src = webkitURL.createObjectURL(stream);
       }
 
@@ -204,7 +210,14 @@ JsSIP.MediaSession.prototype = {
 
     // Get User Media
     console.log(JsSIP.C.LOG_MEDIA_SESSION +"Requesting access to local media.");
-    navigator.webkitGetUserMedia(mediaTypes, getSuccess, getFailure);
+    // avoid to ask to the user media access if
+    // we have already get the permission at the
+    // session beginning
+    if(self.session.localMedia) {
+      getSuccess(self.session.localMedia);
+    } else {
+      navigator.webkitGetUserMedia(mediaType, getSuccess, getFailure);
+    }
 
   },
 
