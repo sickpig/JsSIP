@@ -479,10 +479,6 @@ JsSIP.UA.prototype.receiveRequest = function(request) {
   }
   // In-dialog request
   else {
-    if(method === JsSIP.c.MESSAGE) {
-        message = new JsSIP.Message(this);
-        message.init_incoming(request);
-    }
     dialog = this.findDialog(request);
 
     if(dialog) {
