@@ -8,7 +8,7 @@
  * @augments JsSIP
  */
 
-JsSIP.c = {
+JsSIP.C= {
   USER_AGENT: JsSIP.name() +' '+ JsSIP.version(),
 
   // Modules and Classes names for logging purposes
@@ -38,6 +38,9 @@ JsSIP.c = {
   LOG_PRESENCE:               JsSIP.name() +' | '+ 'PRESENCE' +' | ',
   LOG_MESSAGE_SUMMARY:        JsSIP.name() +' | '+ 'MESSAGE_SUMMARY' +' | ',
 
+
+  // SIP schemes
+  SIP: 'sip',
 
   // Transaction states
   TRANSACTION_TRYING:     1,

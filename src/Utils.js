@@ -1,5 +1,5 @@
 
-JsSIP.utils = {
+JsSIP.Utils= {
 
   str_utf8_length: function(string) {
     return window.unescape(encodeURIComponent(string)).length;
@@ -14,7 +14,7 @@ JsSIP.utils = {
   },
 
   newTag: function() {
-    return Math.random().toString(36).substr(2,JsSIP.c.TAG_LENGTH);
+    return Math.random().toString(36).substr(2,JsSIP.C.TAG_LENGTH);
   },
 
   // http://stackoverflow.com/users/109538/broofa
@@ -27,13 +27,28 @@ JsSIP.utils = {
     return UUID;
   },
 
-  checkUri: function(target) {
-    if (!target) {
-      return false;
-    } else if(JsSIP.grammar.parse(target, 'lazy_uri') === -1) {
-      return false;
+  createURI: function(uri) {
+    var parsed;
+
+    if (!/^sip:/.test(uri)) {
+      uri = JsSIP.C.SIP +':'+ uri;
+    }
+
+    uri = JsSIP.grammar.parse(uri,'SIP_URI');
+
+    if (parsed !== -1) {
+      return uri;
+    }
+  },
+
+  hostType: function(host) {
+    if (!host) {
+      return;
     } else {
-      return true;
+      host = JsSIP.grammar.parse(host,'host');
+      if (host !== -1) {
+        return host.host_type;
+      }
     }
   },
 
@@ -43,31 +58,33 @@ JsSIP.utils = {
   * @param {String} target
   * @param {String} [domain]
   */
-  normalizeUri: function(target, domain) {
+  normalizeURI: function(target, domain) {
     var uri, parameter, string;
 
-    if (!JsSIP.utils.checkUri(target)) {
-      console.log('Invalid target: '+ target);
-      return;
+    if (target) {
+      uri = JsSIP.grammar.parse(target, 'lazy_uri');
+
+      if (uri === -1) {
+        console.log('Invalid target: '+ target);
+        return;
+      }
+
+      if (!uri.host && !domain) {
+        console.log('No domain specified in target nor as function parameter');
+        return;
+      }
+
+      string = (uri.scheme || JsSIP.C.SIP) + ':';
+      string += uri.user;
+      string += '@' + (uri.host || domain);
+      string += (uri.port)? ':' + uri.port : '';
+
+      for (parameter in uri.params) {
+        string += ';'+ parameter;
+        string += (uri.params[parameter] === undefined)? '' : '='+ uri.params[parameter];
+      }
+      return string;
     }
-
-    uri = JsSIP.grammar.parse(target, 'lazy_uri');
-
-    if (!uri.host && !domain) {
-      console.log('No domain specified in target nor as function parameter');
-      return;
-    }
-
-    string = (uri.scheme)? uri.scheme +':' : 'sip:';
-    string += uri.user;
-    string += '@' + (uri.host? uri.host : domain);
-    string += (uri.port)? ':' + uri.port : '';
-
-    for (parameter in uri.params) {
-      string += ';'+ parameter;
-      string += (uri.params[parameter] === true)? '' : '='+ uri.params[parameter];
-    }
-    return string;
   },
 
   headerize: function(string) {
@@ -107,8 +124,8 @@ JsSIP.utils = {
   sipErrorCause: function(status_code) {
     var cause;
 
-    for (cause in JsSIP.c.SIP_ERROR_CAUSES) {
-      if (JsSIP.c.SIP_ERROR_CAUSES[cause].indexOf(status_code) !== -1) {
+    for (cause in JsSIP.C.SIP_ERROR_CAUSES) {
+      if (JsSIP.C.SIP_ERROR_CAUSES[cause].indexOf(status_code) !== -1) {
         return cause;
       }
     }
@@ -124,18 +141,18 @@ JsSIP.utils = {
   },
 
   checkUAStatus: function(ua) {
-    if(ua.status !== JsSIP.c.UA_STATUS_READY) {
-      throw new JsSIP.exceptions.NotReadyError();
+    if(ua.status !== JsSIP.C.UA_STATUS_READY) {
+      throw new JsSIP.Exceptions.NotReadyError();
     }
   },
 
   getAllowedMethods: function(ua) {
     var event,
-      allowed = JsSIP.c.ALLOWED_METHODS.split(', ');
+      allowed = JsSIP.C.ALLOWED_METHODS.split(', ');
 
-    for (event in JsSIP.c.UA_EVENT_METHODS) {
+    for (event in JsSIP.C.UA_EVENT_METHODS) {
       if (!ua.checkEvent(event) || ua.listeners(event).length === 0) {
-        allowed.splice(allowed.indexOf(JsSIP.c.UA_EVENT_METHODS[event]), 1);
+        allowed.splice(allowed.indexOf(JsSIP.C.UA_EVENT_METHODS[event]), 1);
       }
     }
 
