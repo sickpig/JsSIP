@@ -115,7 +115,7 @@ JsSIP.MediaSession.prototype = {
       servers = [];
 
     for (idx in this.session.ua.configuration.stun_servers) {
-      server = this.session.ua.configuration.stun_server[idx];
+      server = this.session.ua.configuration.stun_servers[idx];
       servers.push({'url': server});
     }
 
