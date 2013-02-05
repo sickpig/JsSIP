@@ -216,7 +216,7 @@ JsSIP.MediaSession.prototype = {
     if(self.session.localMedia) {
       getSuccess(self.session.localMedia);
     } else {
-      navigator.webkitGetUserMedia(mediaType, getSuccess, getFailure);
+      navigator.webkitGetUserMedia(mediaTypes, getSuccess, getFailure);
     }
   },
 
