@@ -32,15 +32,18 @@ JsSIP.Utils= {
   },
 
   createURI: function(uri) {
-    var parsed;
-
     if (!/^sip:/.test(uri)) {
       uri = JsSIP.C.SIP +':'+ uri;
     }
 
+    if (uri.indexOf('@') === -1) {
+      console.log('Invalid uri. Missing uri domain.');
+      return;
+    }
+
     uri = JsSIP.grammar.parse(uri,'SIP_URI');
 
-    if (parsed !== -1) {
+    if (uri !== -1) {
       return uri;
     }
   },
@@ -137,11 +140,15 @@ JsSIP.Utils= {
     return JsSIP.C.causes.SIP_FAILURE_CODE;
   },
 
-  getRandomIP: function() {
-    function get_octet() {
-      return (Math.random() * 255 | 0) + 1;
+  /**
+  * Generate a random Test-Net IP (http://tools.ietf.org/html/rfc5735)
+  * @private
+  */
+  getRandomTestNetIP: function() {
+    function getOctet(from,to) {
+      return window.Math.floor(window.Math.random()*(to-from+1)+from);
     }
-    return get_octet()+'.'+get_octet()+'.'+get_octet()+'.'+get_octet();
+    return '192.0.2.' + getOctet(1, 254);
   },
 
   checkUAStatus: function(ua) {
