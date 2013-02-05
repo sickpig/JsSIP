@@ -5365,7 +5365,7 @@ JsSIP.grammar = (function(){
         if (result0 !== null) {
           result0 = (function(offset) {
                             data.host_type = 'IPv4';
-                            return input.substring(pos, offset); })(pos0);
+                            return [input.substring(pos, offset)]; })(pos0);
         }
         if (result0 === null) {
           pos = pos0;
