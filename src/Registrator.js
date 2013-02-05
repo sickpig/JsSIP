@@ -47,11 +47,15 @@ JsSIP.Registrator = function(ua, transport) {
 };
 
 JsSIP.Registrator.prototype = {
-  register: function(extraHeaders) {
-    var request_sender, cause,
+  /**
+   * @param {Object} [options]
+   */
+  register: function(options) {
+    var request_sender, cause, extraHeaders,
       self = this;
 
-    extraHeaders = extraHeaders || [];
+    options = options || {};
+    extraHeaders = options.extraHeaders || [];
     extraHeaders.push('Contact: '+ this.contact + ';expires=' + this.expires);
     extraHeaders.push('Allow: '+ JsSIP.Utils.getAllowedMethods(this.ua));
 
@@ -142,13 +146,6 @@ JsSIP.Registrator.prototype = {
           break;
         default:
           cause = JsSIP.Utils.sipErrorCause(response.status_code);
-
-          if (cause) {
-            cause = JsSIP.C.causes[cause];
-          } else {
-            cause = JsSIP.C.causes.SIP_FAILURE_CODE;
-          }
-
           this.registrationFailure(response, cause);
       }
     };
@@ -171,27 +168,25 @@ JsSIP.Registrator.prototype = {
   },
 
   /**
-  * @param {Boolean} [all=false]
+  * @param {Object} [options]
   */
-  unregister: function(all, extraHeaders) {
-    /* Parameters:
-    *
-    * - all: If true, then perform a "unregister all" action ("Contact: *");
-    */
+  unregister: function(options) {
+    var extraHeaders;
+
     if(!this.registered) {
       console.log(JsSIP.C.LOG_REGISTRATOR +"Already unregistered");
       return;
     }
 
-    extraHeaders = extraHeaders || [];
+    options = options || {};
+    extraHeaders = options.extraHeaders || [];
 
     this.registered = false;
-    this.ua.emit('unregistered', this.ua);
 
     // Clear the registration timer.
     window.clearTimeout(this.registrationTimer);
 
-    if(all) {
+    if(options.all) {
       extraHeaders.push('Contact: *');
       extraHeaders.push('Expires: 0');
 
@@ -216,21 +211,33 @@ JsSIP.Registrator.prototype = {
     * @private
     */
     this.receiveResponse = function(response) {
-      console.log(JsSIP.C.LOG_REGISTRATOR +response.status_code + ' ' + response.reason_phrase + ' received to unregister request');
+      var cause;
+
+      switch(true) {
+        case /^1[0-9]{2}$/.test(response.status_code):
+          // Ignore provisional responses.
+          break;
+        case /^2[0-9]{2}$/.test(response.status_code):
+          this.unregistered(response);
+          break;
+        default:
+          cause = JsSIP.Utils.sipErrorCause(response.status_code);
+          this.unregistered(response, cause);
+      }
     };
 
     /**
     * @private
     */
     this.onRequestTimeout = function() {
-      console.log(JsSIP.C.LOG_REGISTRATOR +'Request Timeout received for unregister request');
+      this.unregistered(null, JsSIP.C.causes.REQUEST_TIMEOUT);
     };
 
     /**
     * @private
     */
     this.onTransportError = function() {
-      console.log(JsSIP.C.LOG_REGISTRATOR +'Transport Error received for unregister request');
+      this.unregistered(null, JsSIP.C.causes.CONNECTION_ERROR);
     };
 
     request_sender.send();
@@ -240,13 +247,28 @@ JsSIP.Registrator.prototype = {
   * @private
   */
   registrationFailure: function(response, cause) {
-    if (this.registered) {
-      this.registered = false;
-      this.ua.emit('unregistered', this.ua);
-    }
     this.ua.emit('registrationFailed', this.ua, {
       response: response || null,
       cause: cause
+    });
+
+    if (this.registered) {
+      this.registered = false;
+      this.ua.emit('unregistered', this.ua, {
+        response: response || null,
+        cause: cause
+      });
+    }
+  },
+
+  /**
+   * @private
+   */
+  unregistered: function(response, cause) {
+    this.registered = false;
+    this.ua.emit('unregistered', this.ua, {
+      response: response || null,
+      cause: cause || null
     });
   },
 

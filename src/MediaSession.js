@@ -28,11 +28,11 @@ JsSIP.MediaSession.prototype = {
    * <br> -- If the user consents, create a peerConnection.
    * <br> -- If the user doesn't consent, fire onFailure callback.
    *
-   * @param {Object} mediaType {audio:true/false, video:true/false}
+   * @param {Object} mediaTypes {audio:true/false, video:true/false}
    * @param {Function} onSuccess
    * @param {Function} onFailure
    */
-  startCaller: function(mediaType, onSuccess, onFailure) {
+  startCaller: function(mediaTypes, onSuccess, onFailure) {
     var self = this;
 
     /** @private */
@@ -54,7 +54,7 @@ JsSIP.MediaSession.prototype = {
       onFailure(e);
     }
 
-    this.getUserMedia(mediaType, onGetUserMediaSuccess, onGetUserMediaFailure);
+    this.getUserMedia(mediaTypes, onGetUserMediaSuccess, onGetUserMediaFailure);
   },
 
   /**
@@ -109,7 +109,7 @@ JsSIP.MediaSession.prototype = {
   * @param {Function} onSuccess Fired when there are no more ICE candidates
   */
   start: function(onSuccess) {
-    var idx, server,
+    var idx, server, scheme, url,
       session = this,
       sent = false,
       servers = [];
@@ -121,7 +121,12 @@ JsSIP.MediaSession.prototype = {
 
     for (idx in this.session.ua.configuration.turn_servers) {
       server = this.session.ua.configuration.turn_servers[idx];
-      servers.push({'url': server.username +'@'+ server.server, 'credential': server.password});
+      url = server.server;
+      scheme = url.substr(0, url.indexOf(':'));
+      servers.push({
+        'url': scheme + ':' + server.username + '@' + url.substr(scheme.length+1),
+        'credential': server.password
+      });
     }
 
     this.peerConnection = new webkitRTCPeerConnection({"iceServers": servers});
@@ -176,11 +181,11 @@ JsSIP.MediaSession.prototype = {
   },
 
   /**
-  * @param {Object} mediaType
+  * @param {Object} mediaTypes
   * @param {Function} onSuccess
   * @param {Function} onFailure
   */
-  getUserMedia: function(mediaType, onSuccess, onFailure) {
+  getUserMedia: function(mediaTypes, onSuccess, onFailure) {
     var self = this;
 
     function getSuccess(stream) {

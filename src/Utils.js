@@ -13,6 +13,10 @@ JsSIP.Utils= {
     }
   },
 
+  isDecimal: function (num) {
+    return !isNaN(num) && (parseFloat(num) === parseInt(num,10));
+  },
+
   newTag: function() {
     return Math.random().toString(36).substr(2,JsSIP.C.TAG_LENGTH);
   },
@@ -126,11 +130,11 @@ JsSIP.Utils= {
 
     for (cause in JsSIP.C.SIP_ERROR_CAUSES) {
       if (JsSIP.C.SIP_ERROR_CAUSES[cause].indexOf(status_code) !== -1) {
-        return cause;
+        return JsSIP.C.causes[cause];
       }
     }
 
-    return;
+    return JsSIP.C.causes.SIP_FAILURE_CODE;
   },
 
   getRandomIP: function() {
