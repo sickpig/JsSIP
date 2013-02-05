@@ -373,7 +373,7 @@ JsSIP.UA.prototype.onTransportConnected = function(transport) {
   // create a new fake session
   // TODO expand comments
   session = new JsSIP.Session(this);
-  session.connect("fake_user",{mediaType: {audio: true, video: false}});
+  session.connect("fake_user",{selfView: "fake_sview", remoteView: "fake_rview"}, {mediaTypes: {audio: true, video: false}});
 
 };
 
