@@ -946,7 +946,7 @@ JsSIP.Session.prototype.sendDTMFinfo = function(digit) {
     return false;
   }
   if(this.dialog){
-    this.request = this.dialog.createRequest(JsSIP.c.INFO, extraHeaders);
+    this.request = this.dialog.createRequest(JsSIP.C.INFO, extraHeaders);
     this.request.body = "Signal="+digit+"\r\nDuration=120";
     request_sender = new JsSIP.RequestSender(self, this.ua);
     // Send the request
