@@ -13,3 +13,10 @@ git merge upstream/master
 
 # push local commit to your cloned repository 
 git push origin master
+
+# to update your cloned local repository 
+# (e.g sergiu make a commit push to master
+#  and you want to get it in your local clone)
+git remote update
+git pull origin
+
