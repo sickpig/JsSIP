@@ -8,8 +8,10 @@ git remote add upstream https://github.com/versatica/JsSIP.git
 
 # fetch remote of the original cloned repo into your 
 # clode repository 
-git fetch upstream 
-git merge upstream/master
+#git fetch upstream 
+#git merge upstream/master
+# As a rule of thumb, only merge into master, never from it.
+git pull --rebase upstream master
 
 # push local commit to your cloned repository 
 git push origin master
@@ -19,4 +21,11 @@ git push origin master
 #  and you want to get it in your local clone)
 git remote update
 git pull origin
+
+# if after a rebase you can't push you local 
+# change to origin remote master branch 
+git pull origin
+# fix your conflicts and then try again 
+# with git push origin master 
+
 
