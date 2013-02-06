@@ -1,3 +1,6 @@
+####
+# GIT Stuff
+####
 
 #clone the repo
 git clone https://github.com/sickpig/JsSIP.git JsSIP-sickpig 
@@ -13,6 +16,12 @@ git remote add upstream https://github.com/versatica/JsSIP.git
 # As a rule of thumb, only merge into master, never from it.
 git pull --rebase upstream master
 
+# if after a rebase you can't push you local 
+# change to origin remote master branch 
+git pull origin
+# fix your conflicts and then try again 
+# with git push origin master 
+
 # push local commit to your cloned repository 
 git push origin master
 
@@ -22,10 +31,23 @@ git push origin master
 git remote update
 git pull origin
 
-# if after a rebase you can't push you local 
-# change to origin remote master branch 
-git pull origin
-# fix your conflicts and then try again 
-# with git push origin master 
 
+#####
+# DEPLOY Stuff 
+###
 
+Always run
+
+pegjs -e JsSIP.grammar src/grammar.pegjs dist/grammar.js
+
+every time src/grammar/src/grammar.pegjs is changed 
+then you need to change dist/grammar.js to make it 
+work properly (see src/grammar/README.md for more
+info), like that: 
+
+* Return `-1` instead of throwing an exception for a parsing error.
+* Return expected `msg` object instead of the default Array for a successful parsing.
+ 
+to install pegjs: 
+
+npm install -g pegjs
