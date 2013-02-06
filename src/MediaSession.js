@@ -218,7 +218,6 @@ JsSIP.MediaSession.prototype = {
     } else {
       navigator.webkitGetUserMedia(mediaTypes, getSuccess, getFailure);
     }
-
   },
 
   /**

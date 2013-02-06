@@ -955,7 +955,6 @@ JsSIP.Session.prototype.sendDTMFinfo = function(digit) {
   }
 };
 
-
 /**
  * Send a DTMF
  *

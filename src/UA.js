@@ -193,7 +193,7 @@ JsSIP.UA.prototype.stop = function() {
     this.localMedia.stop();
   }
 
-  if(this.status !== JsSIP.c.UA_STATUS_READY) {
+  if(this.status !== JsSIP.C.UA_STATUS_READY) {
     throw new JsSIP.Exceptions.NotReadyError(this.status, this.error);
   }
 
