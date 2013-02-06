@@ -1021,6 +1021,7 @@ JsSIP.Session.prototype.sendDTMF = function(tones, options) {
     },
     interToneGap
   );
+};
 
 /**
  * Initial Request Sender
