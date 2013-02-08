@@ -444,7 +444,7 @@ JsSIP.UA.prototype.receiveRequest = function(request) {
 
     switch(method) {
       case JsSIP.C.INVITE:
-        if(JsSIP.Utils.isWebRtcSupported()) {
+        if(JsSIP.WebRTC.isSupported()) {
           session = new JsSIP.Session(this);
           session.init_incoming(request);
         } else {
@@ -541,16 +541,13 @@ JsSIP.UA.prototype.findDialog = function(request) {
     dialog = this.dialogs[id];
 
   if(dialog) {
-    console.log(JsSIP.C.LOG_UA +'dialogs', 'dialog found');
     return dialog;
   } else {
     id = request.call_id + request.to_tag + request.from_tag;
     dialog = this.dialogs[id];
     if(dialog) {
-      console.log(JsSIP.C.LOG_UA +'dialogs', 'dialog found');
       return dialog;
     } else {
-      console.log(JsSIP.C.LOG_UA +'dialogs', 'No dialog found');
       return null;
     }
   }
@@ -680,7 +677,6 @@ JsSIP.UA.prototype.loadConfig = function(configuration) {
   // Check Mandatory parameters
   for(parameter in JsSIP.UA.configuration_check.mandatory) {
     if(!configuration.hasOwnProperty(parameter)) {
-      console.error(JsSIP.C.LOG_UA + 'Missing config parameter: ' + parameter);
       throw new JsSIP.Exceptions.ConfigurationError(parameter);
     } else {
       value = configuration[parameter];
@@ -688,7 +684,6 @@ JsSIP.UA.prototype.loadConfig = function(configuration) {
       if (checked_value !== undefined) {
         settings[parameter] = checked_value;
       } else {
-        console.error(JsSIP.C.LOG_UA + 'Bad configuration parameter ' + parameter + ' with value ' + window.JSON.stringify(value));
         throw new JsSIP.Exceptions.ConfigurationError(parameter, value);
       }
     }
@@ -709,7 +704,6 @@ JsSIP.UA.prototype.loadConfig = function(configuration) {
       if (checked_value !== undefined) {
         settings[parameter] = checked_value;
       } else {
-        console.error(JsSIP.C.LOG_UA + 'Bad configuration parameter ' + parameter + ' with value ' + window.JSON.stringify(value));
         throw new JsSIP.Exceptions.ConfigurationError(parameter, value);
       }
     }
@@ -719,7 +713,6 @@ JsSIP.UA.prototype.loadConfig = function(configuration) {
 
   // Connection recovery intervals
   if(settings.connection_recovery_max_interval < settings.connection_recovery_min_interval) {
-    console.error(JsSIP.C.LOG_UA + '"connection_recovery_max_interval" value is lower than "connection_recovery_min_interval"');
     throw new JsSIP.Exceptions.ConfigurationError('connection_recovery_max_interval', settings.connection_recovery_max_interval);
   }
 
@@ -855,7 +848,6 @@ JsSIP.UA.configuration_check = {
       parsed = JsSIP.Utils.parseURI(uri);
 
       if(!parsed) {
-        console.log(JsSIP.C.LOG_UA +'Invalid uri: ' + uri);
         return;
       } else {
         return parsed;

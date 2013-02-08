@@ -1,6 +1,4 @@
 
-/*global webkitURL: false, webkitRTCPeerConnection: false*/
-
 /**
  * @fileoverview SIP User Agent
  */
@@ -83,7 +81,7 @@ JsSIP.MediaSession.prototype = {
       self.peerConnection.addStream(stream);
 
       self.peerConnection.setRemoteDescription(
-        new window.RTCSessionDescription({type:'offer', sdp:sdp}),
+        new JsSIP.WebRTC.RTCSessionDescription({type:'offer', sdp:sdp}),
         function() {
           self.peerConnection.createAnswer(
             function(sessionDescription){
@@ -129,7 +127,7 @@ JsSIP.MediaSession.prototype = {
       });
     }
 
-    this.peerConnection = new webkitRTCPeerConnection({"iceServers": servers});
+    this.peerConnection = new JsSIP.WebRTC.RTCPeerConnection({"iceServers": servers});
 
     this.peerConnection.onicecandidate = function(event) {
       if (event.candidate) {
@@ -152,8 +150,8 @@ JsSIP.MediaSession.prototype = {
     this.peerConnection.onaddstream = function(mediaStreamEvent) {
       console.warn(JsSIP.C.LOG_MEDIA_SESSION +'stream added');
 
-      if (session.remoteView && this.remoteStreams.length > 0) {
-        session.remoteView.src = webkitURL.createObjectURL(mediaStreamEvent.stream);
+      if (session.remoteView && this.getRemoteStreams().length > 0) {
+        session.remoteView.src = window.URL.createObjectURL(mediaStreamEvent.stream);
       }
     };
 
@@ -197,8 +195,8 @@ JsSIP.MediaSession.prototype = {
       self.session.ua.setUserMedia(stream);
 
       // Attach the stream to the view if it exists.
-      if (self.selfView) {
-        self.selfView.src = webkitURL.createObjectURL(stream);
+      if (self.selfView){
+        self.selfView.src = window.URL.createObjectURL(stream);
       }
 
       onSuccess(stream);
@@ -216,7 +214,7 @@ JsSIP.MediaSession.prototype = {
     if(self.session.localMedia) {
       getSuccess(self.session.localMedia);
     } else {
-      navigator.webkitGetUserMedia(mediaTypes, getSuccess, getFailure);
+      JsSIP.WebRTC.getUserMedia(mediaTypes, getSuccess, getFailure);
     }
   },
 
@@ -232,7 +230,7 @@ JsSIP.MediaSession.prototype = {
       console.log(JsSIP.C.LOG_MEDIA_SESSION +'re-Invite received');
     } else if (type === 'answer') {
       this.peerConnection.setRemoteDescription(
-        new window.RTCSessionDescription({type:'answer', sdp:sdp}), onSuccess, onFailure);
+        new JsSIP.WebRTC.RTCSessionDescription({type:'answer', sdp:sdp}), onSuccess, onFailure);
     }
   }
 };
