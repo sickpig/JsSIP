@@ -1,3 +1,4 @@
+
 /**
  * @augments JsSIP
  * @class Class creating a Name Address SIP header.
@@ -36,7 +37,7 @@ JsSIP.NameAddrHeader = function(uri, display_name, parameters) {
 JsSIP.NameAddrHeader.prototype = {
   setParam: function(key, value) {
     if (key) {
-      this.parameters[key.toLowerCase()] = (typeof value === 'undefined' || value === null)? null : value.toString();
+      this.parameters[key.toLowerCase()] = (typeof value === 'undefined' || value === null)? null : value.toString().toLowerCase();
     }
   },
 
@@ -53,9 +54,12 @@ JsSIP.NameAddrHeader.prototype = {
   },
 
   deleteParam: function(parameter) {
+    var value;
     parameter = parameter.toLowerCase();
     if (this.parameters.hasOwnProperty(parameter)) {
+      value = this.parameters[parameter];
       delete this.parameters[parameter];
+      return value;
     }
   },
 
@@ -74,7 +78,7 @@ JsSIP.NameAddrHeader.prototype = {
     var body, parameter;
 
     body  = (this.display_name) ? '"' + this.display_name + '" ' : '';
-    body += (this.display_name) ? '<' + this.uri.toString() + '>' : this.uri.toString();
+    body += '<' + this.uri.toString() + '>';
 
 
     for (parameter in this.parameters) {

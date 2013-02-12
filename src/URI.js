@@ -63,7 +63,7 @@ JsSIP.URI = function(scheme, user, host, port, parameters, headers) {
 JsSIP.URI.prototype = {
   setParam: function(key, value) {
     if(key) {
-      this.parameters[key.toLowerCase()] = (typeof value === 'undefined' || value === null)? null : value.toString();
+      this.parameters[key.toLowerCase()] = (typeof value === 'undefined' || value === null)? null : value.toString().toLowerCase();
     }
   },
 
@@ -80,9 +80,12 @@ JsSIP.URI.prototype = {
   },
 
   deleteParam: function(parameter) {
+    var value;
     parameter = parameter.toLowerCase();
     if (this.parameters.hasOwnProperty(parameter)) {
+      value = this.parameters[parameter];
       delete this.parameters[parameter];
+      return value;
     }
   },
 
@@ -107,15 +110,17 @@ JsSIP.URI.prototype = {
   },
 
   deleteHeader: function(header) {
+    var value;
     header = JsSIP.Utils.headerize(header);
     if(this.headers.hasOwnProperty(header)) {
+      value = this.headers[header];
       delete this.headers[header];
+      return value;
     }
   },
 
   clearHeaders: function() {
     this.headers = {};
-    return this.headers;
   },
 
   clone: function() {
@@ -140,7 +145,7 @@ JsSIP.URI.prototype = {
 
     uri  = this.scheme || JsSIP.C.SIP;
     uri += ':';
-    uri += this.user ? window.encodeURIComponent(this.user) + '@' : '';
+    uri += this.user ? JsSIP.Utils.escapeUser(this.user) + '@' : '';
     uri += this.host;
     uri += this.port ? ':' + this.port : '';
 
@@ -166,7 +171,7 @@ JsSIP.URI.prototype = {
 
       aor += this.scheme || JsSIP.C.SIP;
       aor += ':';
-      aor += this.user ? window.encodeURIComponent(this.user) + '@' : '';
+      aor += this.user ? JsSIP.Utils.escapeUser(this.user) + '@' : '';
       aor += this.host;
 
       return aor;

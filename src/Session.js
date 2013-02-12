@@ -78,14 +78,13 @@ JsSIP.Session.prototype.init_incoming = function(request) {
 };
 
 JsSIP.Session.prototype.connect = function(target, views, options) {
-  var event, eventHandlers, request, selfView, remoteView, mediaTypes, extraHeaders, requestParams,
-    original_target = target;
+  var event, eventHandlers, request, selfView, remoteView, mediaTypes, extraHeaders, requestParams;
 
   // Check UA Status
   JsSIP.Utils.checkUAStatus(this.ua);
 
   // Check WebRTC support
-  if(!JsSIP.WebRTC.isSupported()) {
+  if(!JsSIP.WebRTC.isSupported) {
     console.log(JsSIP.C.LOG_UA +'WebRTC not supported.');
     throw new JsSIP.Exceptions.WebRtcNotSupportedError();
   }
@@ -116,9 +115,6 @@ JsSIP.Session.prototype.connect = function(target, views, options) {
 
   // Check target validity
   target = JsSIP.Utils.normalizeURI(target, this.ua.configuration.domain);
-  if (!target) {
-    throw new JsSIP.Exceptions.InvalidTargetError(original_target);
-  }
 
   // Session parameter initialization
   this.from_tag = JsSIP.Utils.newTag();

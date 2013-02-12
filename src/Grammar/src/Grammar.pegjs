@@ -103,6 +103,7 @@ SIP_URI_noparams  = uri_scheme ":"  userinfo ? hostport {
                       }}
 
 SIP_URI         = uri_scheme ":"  userinfo ? hostport uri_parameters headers ? {
+                    var header;
                     try {
                         data.uri = new JsSIP.URI(data.scheme, data.user, data.host, data.port, data.uri_params);
                         delete data.scheme;
@@ -111,6 +112,11 @@ SIP_URI         = uri_scheme ":"  userinfo ? hostport uri_parameters headers ? {
                         delete data.host_type;
                         delete data.port;
                         delete data.uri_params;
+
+                        for (header in data.uri_headers) {
+                          data.uri.setHeader(header, data.uri_headers[header]);
+                        };
+
                         if (startRule === 'SIP_URI') { data = data.uri;}
                       } catch(e) {
                         data = -1;
@@ -122,8 +128,7 @@ uri_scheme      = uri_scheme:  "sip"i {
 userinfo        = user (":" password)? "@" {
                     data.user = window.decodeURIComponent(input.substring(pos-1, offset));}
 
-user            = ( unreserved / escaped / user_unreserved )+ {
-                    data.user = window.decodeURIComponent(input.substring(pos, offset));}
+user            = ( unreserved / escaped / user_unreserved )+
 
 user_unreserved = "&" / "=" / "+" / "$" / "," / ";" / "?" / "/"
 
@@ -220,7 +225,7 @@ maddr_param       = "maddr="i maddr: host {
                       if(!data.uri_params) data.uri_params={};
                       data.uri_params['maddr'] = maddr; }
 
-lr_param          = lr: "lr"i {
+lr_param          = "lr"i ('=' token)? {
                       if(!data.uri_params) data.uri_params={};
                       data.uri_params['lr'] = undefined; }
 
@@ -247,7 +252,15 @@ param_unreserved  = "[" / "]" / "/" / ":" / "&" / "+" / "$"
 
 headers           = "?" header ( "&" header )*
 
-header            = hname "=" hvalue
+header            = hname: hname "=" hvalue: hvalue  {
+                      hname = hname.join('').toLowerCase();
+                      hvalue = hvalue.join('');
+                      if(!data.uri_headers) data.uri_headers = {};
+                      if (!data.uri_headers[hname]) {
+                        data.uri_headers[hname] = [hvalue];
+                      } else {
+                        data.uri_headers[hname].push(hvalue);
+                      }}
 
 hname             = ( hnv_unreserved / unreserved / escaped )+
 
@@ -363,13 +376,34 @@ Call_ID  =  word ( "@" word )? {
 // CONTACT
 
 Contact             = ( STAR / (contact_param (COMMA contact_param)*) ) {
-                        try {
-                          data = new JsSIP.NameAddrHeader(data.uri, data.display_name, data.params);
-                        } catch(e) {
+                        var idx;
+                        for (idx in data.multi_header) {
+                          if (data.multi_header[idx].parsed === null) {
+                            data = null;
+                            break;
+                          }
+                        }
+                        if (data !== null) {
+                          data = data.multi_header;
+                        } else {
                           data = -1;
                         }}
 
-contact_param       = (addr_spec / name_addr) (SEMI contact_params)*
+contact_param       = (addr_spec / name_addr) (SEMI contact_params)* {
+                        var header;
+                        if(!data.multi_header) data.multi_header = [];
+                        try {
+                          header = new JsSIP.NameAddrHeader(data.uri, data.display_name, data.params);
+                          delete data.uri;
+                          delete data.display_name;
+                          delete data.params;
+                        } catch(e) {
+                          header = null;
+                        }
+                        data.multi_header.push( { 'possition': pos,
+                                                  'offset': offset,
+                                                  'parsed': header
+                                                });}
 
 name_addr           = ( display_name )? LAQUOT SIP_URI RAQUOT
 
@@ -581,9 +615,35 @@ option_tag     = token
 
 // RECORD-ROUTE
 
-Record_Route  = rec_route (COMMA rec_route)*
+Record_Route  = rec_route (COMMA rec_route)* {
+                  var idx;
+                  for (idx in data.multi_header) {
+                    if (data.multi_header[idx].parsed === null) {
+                      data = null;
+                      break;
+                    }
+                  }
+                  if (data !== null) {
+                    data = data.multi_header;
+                  } else {
+                    data = -1;
+                  }}
 
-rec_route     = name_addr ( SEMI rr_param )*
+rec_route     = name_addr ( SEMI rr_param )* {
+                  var header;
+                  if(!data.multi_header) data.multi_header = [];
+                  try {
+                    header = new JsSIP.NameAddrHeader(data.uri, data.display_name, data.params);
+                    delete data.uri;
+                    delete data.display_name;
+                    delete data.params;
+                  } catch(e) {
+                    header = null;
+                  }
+                  data.multi_header.push( { 'possition': pos,
+                                            'offset': offset,
+                                            'parsed': header
+                                          });}
 
 rr_param      = generic_param
 
