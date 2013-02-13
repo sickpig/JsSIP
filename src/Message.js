@@ -24,9 +24,12 @@ JsSIP.Message.prototype.send = function(target, body, options) {
       'sending',
       'succeeded',
       'failed'
-    ];
+    ],
+    invalidTarget = false;
 
-  JsSIP.Utils.checkUAStatus(this.ua);
+  if (target === undefined || body === undefined) {
+    throw new TypeError('Not enough arguments');
+  }
 
   this.initEvents(events);
 
@@ -42,7 +45,12 @@ JsSIP.Message.prototype.send = function(target, body, options) {
   }
 
   // Check target validity
-  target = JsSIP.Utils.normalizeURI(target, this.ua.configuration.domain);
+  try {
+    target = JsSIP.Utils.normalizeURI(target, this.ua.configuration.domain);
+  } catch(e) {
+    target = JsSIP.Utils.parseURI(JsSIP.C.INVALID_TARGET_URI);
+    invalidTarget = true;
+  }
 
   // Message parameter initialization
   this.direction = 'outgoing';
@@ -73,7 +81,14 @@ JsSIP.Message.prototype.send = function(target, body, options) {
     request: this.request
   });
 
-  request_sender.send();
+  if (invalidTarget) {
+    this.emit('failed', this, {
+      originator: 'local',
+      cause: JsSIP.C.causes.INVALID_TARGET
+    });
+  } else {
+    request_sender.send();
+  }
 };
 
 /**
@@ -180,7 +195,7 @@ JsSIP.Message.prototype.init_incoming = function(request) {
  */
 JsSIP.Message.prototype.accept = function() {
   if (this.direction !== 'incoming') {
-    throw new JsSIP.Exceptions.InvalidMethodError('accept');
+    throw new TypeError('Invalid method "accept" for an outgoing message');
   }
 
   this.request.reply(200);
@@ -195,12 +210,12 @@ JsSIP.Message.prototype.accept = function() {
  */
 JsSIP.Message.prototype.reject = function(status_code, reason_phrase) {
   if (this.direction !== 'incoming') {
-    throw new JsSIP.Exceptions.InvalidMethodError('reject');
+    throw new TypeError('Invalid method "reject" for an outgoing message');
   }
 
   if (status_code) {
     if ((status_code < 300 || status_code >= 700)) {
-      throw new JsSIP.Exceptions.InvalidValueError('status_code');
+      throw new TypeError('Invalid status_code: '+ status_code);
     } else {
       this.request.reply(status_code, reason_phrase);
     }

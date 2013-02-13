@@ -265,10 +265,10 @@ JsSIP.IncomingMessage.prototype = {
     idx = idx || 0;
 
     if(!this.headers[name]) {
-      console.info(JsSIP.C.LOG_MESSAGE +'Header "' + name + '" not present');
+      console.log(JsSIP.C.LOG_MESSAGE +'header "' + name + '" not present');
       return;
     } else if(idx >= this.headers[name].length) {
-      console.info(JsSIP.C.LOG_MESSAGE +'Not so many "' + name + '" headers present');
+      console.log(JsSIP.C.LOG_MESSAGE +'not so many "' + name + '" headers present');
       return;
     }
 
@@ -284,7 +284,7 @@ JsSIP.IncomingMessage.prototype = {
 
     if(parsed === -1) {
       this.headers[name].splice(idx, 1); //delete from headers
-      console.error(JsSIP.C.LOG_MESSAGE +'Error parsing "' + name + '" header field with value: "' + value + '"');
+      console.warn(JsSIP.C.LOG_MESSAGE +'error parsing "' + name + '" header field with value "' + value + '"');
       return;
     } else {
       header.parsed = parsed;
@@ -352,9 +352,9 @@ JsSIP.IncomingRequest.prototype.reply = function(code, reason, extraHeaders, bod
 
   // Validate code and reason values
   if (!code || (code < 100 || code > 699)) {
-    throw new JsSIP.Exceptions.InvalidValueError('code', code);
+    throw new TypeError('Invalid status_code: '+ code);
   } else if (reason && typeof reason !== 'string' && !(reason instanceof String)) {
-    throw new JsSIP.Exceptions.InvalidValueError('reason', reason);
+    throw new TypeError('Invalid reason_phrase: '+ reason);
   }
 
   reason = reason || JsSIP.C.REASON_PHRASE[code] || '';
@@ -418,9 +418,9 @@ JsSIP.IncomingRequest.prototype.reply_sl = function(code, reason) {
 
   // Validate code and reason values
   if (!code || (code < 100 || code > 699)) {
-    throw new JsSIP.Exceptions.InvalidValueError('code', code);
+    throw new TypeError('Invalid status_code: '+ code);
   } else if (reason && typeof reason !== 'string' && !(reason instanceof String)) {
-    throw new JsSIP.Exceptions.InvalidValueError('reason', reason);
+    throw new TypeError('Invalid reason_phrase: '+ reason);
   }
 
   reason = reason || JsSIP.C.REASON_PHRASE[code] || '';
