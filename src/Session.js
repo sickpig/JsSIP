@@ -90,10 +90,14 @@ JsSIP.Session.prototype.connect = function(target, views, options) {
     throw new TypeError('Invalid argument "views"');
   }
 
-  if (!views.selfView || !(views.selfView instanceof HTMLVideoElement)) {
-    throw new TypeError('Missing or invalid "views.selfView" argument');
-  } else if (views.remoteView && !(views.remoteView instanceof HTMLVideoElement)) {
-    throw new TypeError('Invalid "views.remoteView" argument');
+  mediaTypes = options.mediaTypes || {audio: true, video: true};
+
+  if (options.mediaTypes.video === true) {
+    if (!views.selfView || !(views.selfView instanceof HTMLVideoElement)) {
+      throw new TypeError('Missing or invalid "views.selfView" argument');
+    } else if (views.remoteView && !(views.remoteView instanceof HTMLVideoElement)) {
+      throw new TypeError('Invalid "views.remoteView" argument');
+    }
   }
 
   // Check Session Status
@@ -105,7 +109,6 @@ JsSIP.Session.prototype.connect = function(target, views, options) {
   options = options || {};
   selfView = views.selfView || null;
   remoteView = views.remoteView || null;
-  mediaTypes = options.mediaTypes || {audio: true, video: true};
   extraHeaders = options.extraHeaders || [];
   eventHandlers = options.eventHandlers || {};
 
