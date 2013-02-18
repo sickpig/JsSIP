@@ -52,6 +52,7 @@ JsSIP.URI = function(scheme, user, host, port, parameters, headers) {
         host = value.toLowerCase();
       }
     },
+
     port: {
       get: function(){ return port; },
       set: function(value){
@@ -147,8 +148,11 @@ JsSIP.URI.prototype = {
     }
 
     for (parameter in this.parameters) {
-      uri += ';'+ parameter;
-      uri += (this.parameters[parameter] === null) ? '' : '=' + this.parameters[parameter];
+      uri += ';' + parameter;
+
+      if (this.parameters[parameter] !== null) {
+        uri += '='+ this.parameters[parameter];
+      }
     }
 
     for(header in this.headers) {
@@ -163,7 +167,8 @@ JsSIP.URI.prototype = {
 
     return uri;
   },
-  toAor: function(){
+
+  toAor: function(show_port){
       var aor;
 
       aor  = this.scheme + ':';
@@ -171,7 +176,27 @@ JsSIP.URI.prototype = {
         aor += JsSIP.Utils.escapeUser(this.user) + '@';
       }
       aor += this.host;
+      if (show_port && (this.port || this.port === 0)) {
+        aor += ':' + this.port;
+      }
 
       return aor;
+  }
+};
+
+
+/**
+  * Parse the given string and returns a JsSIP.URI instance or undefined if
+  * it is an invalid URI.
+  * @public
+  * @param {String} uri
+  */
+JsSIP.URI.parse = function(uri) {
+  uri = JsSIP.Grammar.parse(uri,'SIP_URI');
+
+  if (uri !== -1) {
+    return uri;
+  } else {
+    return undefined;
   }
 };

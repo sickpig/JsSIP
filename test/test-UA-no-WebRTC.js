@@ -14,8 +14,18 @@ test('UA no WS connection', function() {
 
   ua.start();
 
+  strictEqual(ua.contact.toString(), '<sip:' + ua.contact.uri.user + '@' + ua.configuration.via_host + ';transport=ws>');
+  strictEqual(ua.contact.toString({outbound: false, anonymous: false, foo: true}), '<sip:' + ua.contact.uri.user + '@' + ua.configuration.via_host + ';transport=ws>');
+  strictEqual(ua.contact.toString({outbound: true}), '<sip:' + ua.contact.uri.user + '@' + ua.configuration.via_host + ';transport=ws;ob>');
+  strictEqual(ua.contact.toString({anonymous: true}), '<sip:anonymous@anonymous.invalid;transport=ws>');
+  strictEqual(ua.contact.toString({anonymous: true, outbound: true}), '<sip:anonymous@anonymous.invalid;transport=ws;ob>');
+
   for (parameter in TestJsSIP.Helpers.DEFAULT_JSSIP_CONFIGURATION_AFTER_START) {
-    deepEqual(ua.configuration[parameter], TestJsSIP.Helpers.DEFAULT_JSSIP_CONFIGURATION_AFTER_START[parameter], 'testing parameter ' + parameter);
+    if (parameter !== 'uri') {
+      deepEqual(ua.configuration[parameter], TestJsSIP.Helpers.DEFAULT_JSSIP_CONFIGURATION_AFTER_START[parameter], 'testing parameter ' + parameter);
+    } else {
+      deepEqual(ua.configuration[parameter].toString(), TestJsSIP.Helpers.DEFAULT_JSSIP_CONFIGURATION_AFTER_START[parameter], 'testing parameter ' + parameter);
+    }
   }
 
   ua.sendMessage('test', 'FAIL WITH CONNECTION_ERROR PLEASE', {
@@ -23,7 +33,7 @@ test('UA no WS connection', function() {
       sending: function(e) {
         var ruri = e.data.request.ruri;
         ok(ruri instanceof JsSIP.URI);
-        strictEqual(e.data.request.ruri.toString(), 'sip:test@' + ua.configuration.domain);
+        strictEqual(e.data.request.ruri.toString(), 'sip:test@' + ua.configuration.uri.host);
       },
       failed: function(e) {
         strictEqual(e.data.cause, JsSIP.C.causes.CONNECTION_ERROR);

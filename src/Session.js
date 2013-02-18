@@ -47,13 +47,6 @@ JsSIP.Session = function(ua) {
   this.data = {};
 
   this.initEvents(events);
-
-  // Self contact value. _gruu_ or not.
-  if (ua.contact.pub_gruu) {
-    this.contact = ua.contact.pub_gruu;
-  } else {
-    this.contact = ua.contact.uri;
-  }
 };
 JsSIP.Session.prototype = new JsSIP.EventEmitter();
 
@@ -66,15 +59,16 @@ JsSIP.Session.prototype = new JsSIP.EventEmitter();
 */
 JsSIP.Session.prototype.init_incoming = function(request) {
   // Session parameter initialization
-  this.from_tag = request.from_tag;
   this.status = JsSIP.C.SESSION_INVITE_RECEIVED;
+  this.from_tag = request.from_tag;
   this.id = request.call_id + this.from_tag;
   this.request = request;
+  this.contact = this.ua.contact.toString();
 
   //Save the session into the ua sessions collection.
   this.ua.sessions[this.id] = this;
 
-  this.receiveInitialRequest(this.ua, request);
+  this.receiveInitialRequest(request);
 };
 
 JsSIP.Session.prototype.connect = function(target, views, options) {
@@ -119,9 +113,9 @@ JsSIP.Session.prototype.connect = function(target, views, options) {
 
   // Check target validity
   try {
-    target = JsSIP.Utils.normalizeURI(target, this.ua.configuration.domain);
+    target = JsSIP.Utils.normalizeURI(target, this.ua.configuration.hostport_params);
   } catch(e) {
-    target = JsSIP.Utils.parseURI(JsSIP.C.INVALID_TARGET_URI);
+    target = JsSIP.URI.parse(JsSIP.C.INVALID_TARGET_URI);
     invalidTarget = true;
   }
 
@@ -139,19 +133,20 @@ JsSIP.Session.prototype.connect = function(target, views, options) {
 
   requestParams = {from_tag: this.from_tag};
 
-  if (options.anonymous) {
-    if (this.ua.contact.temp_gruu) {
-      this.contact = this.ua.contact.temp_gruu;
-    }
+  this.contact = this.ua.contact.toString({
+    anonymous: this.anonymous,
+    outbound: true
+  });
 
+  if (this.anonymous) {
     requestParams.from_display_name = 'Anonymous';
     requestParams.from_uri = 'sip:anonymous@anonymous.invalid';
 
-    extraHeaders.push('P-Preferred-Identity: '+ this.ua.configuration.from_uri);
+    extraHeaders.push('P-Preferred-Identity: '+ this.ua.configuration.uri.toString());
     extraHeaders.push('Privacy: id');
   }
 
-  extraHeaders.push('Contact: <'+ this.contact + ';ob>');
+  extraHeaders.push('Contact: '+ this.contact);
   extraHeaders.push('Allow: '+ JsSIP.Utils.getAllowedMethods(this.ua));
   extraHeaders.push('Content-Type: application/sdp');
 
@@ -370,7 +365,7 @@ JsSIP.Session.prototype.receiveRequest = function(request) {
 /**
  * @private
  */
-JsSIP.Session.prototype.receiveInitialRequest = function(ua, request) {
+JsSIP.Session.prototype.receiveInitialRequest = function(request) {
   var body, contentType, expires,
     session = this;
 
@@ -397,7 +392,7 @@ JsSIP.Session.prototype.receiveInitialRequest = function(ua, request) {
 
     this.userNoAnswerTimer = window.setTimeout(
       function() { session.userNoAnswerTimeout(request); },
-      ua.configuration.no_answer_timeout
+      session.ua.configuration.no_answer_timeout
     );
 
     /**
@@ -431,7 +426,7 @@ JsSIP.Session.prototype.receiveInitialRequest = function(ua, request) {
           return;
         }
 
-        extraHeaders.push('Contact: <' + session.contact + '>');
+        extraHeaders.push('Contact: '+ session.contact);
         request.reply(status_code, reason_phrase, extraHeaders,
           sdp,
           // onSuccess
@@ -485,7 +480,7 @@ JsSIP.Session.prototype.receiveInitialRequest = function(ua, request) {
     if (this.status !== JsSIP.C.SESSION_TERMINATED) {
       this.progress('local');
 
-      request.reply(180, null, ['Contact: <' + this.contact + '>']);
+      request.reply(180, null, ['Contact: '+ this.contact]);
     }
   } else {
     request.reply(415);
@@ -662,7 +657,7 @@ JsSIP.Session.prototype.invite2xxRetransmission = function(retransmissions, requ
   if((retransmissions * JsSIP.Timers.T1) <= JsSIP.Timers.T2) {
     retransmissions += 1;
 
-    request.reply(200, null, ['Contact: <' + this.contact + '>'], body);
+    request.reply(200, null, ['Contact: '+ this.contact], body);
 
     this.invite2xxTimer = window.setTimeout(
       function() {
@@ -794,10 +789,10 @@ JsSIP.Session.prototype.newSession = function(originator, request, target) {
   session.direction = (originator === 'local') ? 'outgoing' : 'incoming';
 
   if (originator === 'remote') {
-    session.local_identity = request.s('to').uri.toAor();
-    session.remote_identity = request.s('from').uri.toAor();
+    session.local_identity = request.to.uri;
+    session.remote_identity = request.from.uri;
   } else if (originator === 'local'){
-    session.local_identity = session.ua.configuration.from_uri;
+    session.local_identity = session.ua.configuration.uri;
     session.remote_identity = target;
   }
 

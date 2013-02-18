@@ -19,12 +19,12 @@ JsSIP.Registrator = function(ua, transport) {
   this.min_expires = ua.configuration.register_min_expires;
 
   // Call-ID and CSeq values RFC3261 10.2
-  this.call_id = Math.random().toString(36).substr(2, 22);
+  this.call_id = JsSIP.Utils.createRandomToken(22);
   this.cseq = 80;
 
-  this.registrar = 'sip:'+ ua.configuration.domain;
+  this.registrar = 'sip:'+ ua.configuration.hostport_params;
   // this.to_uri
-  this.from_uri = ua.configuration.from_uri;
+  this.to_uri = ua.configuration.uri;
 
   this.registrationTimer = null;
 
@@ -35,12 +35,11 @@ JsSIP.Registrator = function(ua, transport) {
   this.ua.registrator = this;
 
   // Contact header
+  this.contact = this.ua.contact.toString();
+
   if(reg_id) {
-    this.contact = '<' + this.ua.contact.uri + '>';
     this.contact += ';reg-id='+ reg_id;
     this.contact += ';+sip.instance="<urn:uuid:'+ this.ua.configuration.instance_id+'>"';
-  } else {
-    this.contact = '<' + this.ua.contact.uri + '>';
   }
 };
 
@@ -58,7 +57,7 @@ JsSIP.Registrator.prototype = {
     extraHeaders.push('Allow: '+ JsSIP.Utils.getAllowedMethods(this.ua));
 
     this.request = new JsSIP.OutgoingRequest(JsSIP.C.REGISTER, this.registrar, this.ua, {
-        'to_uri': this.from_uri,
+        'to_uri': this.to_uri,
         'call_id': this.call_id,
         'cseq': (this.cseq += 1)
       }, extraHeaders);
@@ -94,7 +93,7 @@ JsSIP.Registrator.prototype = {
 
           while(contacts--) {
             contact = response.parseHeader('contact', contacts);
-            if(contact.uri.toString() === this.ua.contact.uri) {
+            if(contact.uri.user === this.ua.contact.uri.user) {
               expires = contact.getParam('expires');
               break;
             } else {
@@ -190,7 +189,7 @@ JsSIP.Registrator.prototype = {
       extraHeaders.push('Expires: 0');
 
       this.request = new JsSIP.OutgoingRequest(JsSIP.C.REGISTER, this.registrar, this.ua, {
-          'to_uri': this.from_uri,
+          'to_uri': this.to_uri,
           'call_id': this.call_id,
           'cseq': (this.cseq += 1)
         }, extraHeaders);
@@ -198,7 +197,7 @@ JsSIP.Registrator.prototype = {
       extraHeaders.push('Contact: '+ this.contact + ';expires=0');
 
       this.request = new JsSIP.OutgoingRequest(JsSIP.C.REGISTER, this.registrar, this.ua, {
-          'to_uri': this.from_uri,
+          'to_uri': this.to_uri,
           'call_id': this.call_id,
           'cseq': (this.cseq += 1)
         }, extraHeaders);

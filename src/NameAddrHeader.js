@@ -28,7 +28,7 @@ JsSIP.NameAddrHeader = function(uri, display_name, parameters) {
     display_name: {
       get: function() { return display_name; },
       set: function(value) {
-        display_name = value;
+        display_name = (value === 0) ? '0' : value;
       }
     }
   });
@@ -36,7 +36,7 @@ JsSIP.NameAddrHeader = function(uri, display_name, parameters) {
 JsSIP.NameAddrHeader.prototype = {
   setParam: function(key, value) {
     if (key) {
-      this.parameters[key.toLowerCase()] = (typeof value === 'undefined' || value === null) ? null : value.toString().toLowerCase();
+      this.parameters[key.toLowerCase()] = (typeof value === 'undefined' || value === null) ? null : value.toString();
     }
   },
 
@@ -81,9 +81,29 @@ JsSIP.NameAddrHeader.prototype = {
 
     for (parameter in this.parameters) {
       body += ';' + parameter;
-      body += (this.parameters[parameter] === null) ? '' : '=' + this.parameters[parameter];
+
+      if (this.parameters[parameter] !== null) {
+        body += '='+ this.parameters[parameter];
+      }
     }
 
     return body;
+  }
+};
+
+
+/**
+  * Parse the given string and returns a JsSIP.NameAddrHeader instance or undefined if
+  * it is an invalid NameAddrHeader.
+  * @public
+  * @param {String} name_addr_header
+  */
+JsSIP.NameAddrHeader.parse = function(name_addr_header) {
+  name_addr_header = JsSIP.Grammar.parse(name_addr_header,'Name_Addr_Header');
+
+  if (name_addr_header !== -1) {
+    return name_addr_header;
+  } else {
+    return undefined;
   }
 };

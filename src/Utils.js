@@ -17,8 +17,22 @@ JsSIP.Utils= {
     return !isNaN(num) && (parseFloat(num) === parseInt(num,10));
   },
 
+  createRandomToken: function(size, base) {
+    var i, r,
+      token = '';
+
+    base = base || 32;
+
+    for( i=0; i < size; i++ ) {
+      r = Math.random() * base|0;
+      token += r.toString(base);
+    }
+
+    return token;
+  },
+
   newTag: function() {
-    return Math.random().toString(36).substr(2,JsSIP.C.TAG_LENGTH);
+    return JsSIP.Utils.createRandomToken(JsSIP.C.TAG_LENGTH);
   },
 
   // http://stackoverflow.com/users/109538/broofa
@@ -29,18 +43,6 @@ JsSIP.Utils= {
     });
 
     return UUID;
-  },
-
-  parseURI: function(uri) {
-    if (!/^sip:/i.test(uri)) {
-      uri = JsSIP.C.SIP +':'+ uri;
-    }
-
-    uri = JsSIP.Grammar.parse(uri,'SIP_URI');
-
-    if (uri !== -1) {
-      return uri;
-    }
   },
 
   hostType: function(host) {
@@ -97,8 +99,12 @@ JsSIP.Utils= {
 
       target = JsSIP.Utils.escapeUser(target_user) + '@' + target_domain;
 
+      if (!/^sip:/i.test(target)) {
+        target = JsSIP.C.SIP + ':' + target;
+      }
+
       // Finally parse the resulting URI.
-      if (uri = JsSIP.Utils.parseURI(target)) {
+      if (uri = JsSIP.URI.parse(target)) {
         return uri;
       } else {
         throw new JsSIP.Exceptions.InvalidTargetError(original_target);

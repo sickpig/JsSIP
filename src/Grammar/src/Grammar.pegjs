@@ -439,7 +439,7 @@ generic_param       = param: token  value: ( EQUAL gen_value )? {
                         else {
                           value = value[1];
                         }
-                        data.params[param.toLowerCase()] = value && value.toLowerCase();}
+                        data.params[param.toLowerCase()] = value;}
 
 gen_value           = token / host / quoted_string
 
@@ -554,6 +554,14 @@ Max_Forwards  = forwards: DIGIT+ {
 
 Min_Expires  = min_expires: delta_seconds {data = min_expires; }
 
+// Name_Addr
+
+Name_Addr_Header =  ( display_name )* LAQUOT SIP_URI RAQUOT ( SEMI generic_param )* {
+                      try {
+                        data = new JsSIP.NameAddrHeader(data.uri, data.display_name, data.params);
+                      } catch(e) {
+                        data = -1;
+                      }}
 
 // PROXY-AUTHENTICATE
 
