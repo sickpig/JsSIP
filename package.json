@@ -20,8 +20,13 @@
     "webrtc",
     "library"
   ],
-   "devDependencies": {
-     "grunt": "0.3.17"
-   },
-  "license": "MIT"
+  "devDependencies": {
+    "grunt": "0.3.17",
+    "pegjs": "0.7.0",
+    "node-minify": "~0.7.2"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "grunt travis --verbose"
+  }
 }
