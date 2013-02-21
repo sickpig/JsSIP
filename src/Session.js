@@ -312,10 +312,8 @@ JsSIP.Session.prototype.receiveRequest = function(request) {
     * established.
     */
 
-    // Transaction layer already responded 487 to the initial request.
-
-    // Reply 200 to CANCEL
-    request.reply(200);
+    // Reply 487
+    this.request.reply(487);
 
     /*
     * Terminate the whole session in case the user didn't accept nor reject the
@@ -454,16 +452,14 @@ JsSIP.Session.prototype.receiveInitialRequest = function(request) {
       };
 
       onMediaFailure = function(e) {
-        console.warn(JsSIP.C.LOG_INVITE_SESSION +'unable to get user media');
-        console.warn(e);
+        console.warn(JsSIP.C.LOG_INVITE_SESSION +'unable to get user media: ' + e);
         request.reply(480);
         session.failed('local', null, JsSIP.C.causes.USER_DENIED_MEDIA_ACCESS);
       };
 
       onSdpFailure = function(e) {
         // Bad SDP Offer. peerConnection.setRemoteDescription throws an exception.
-        console.warn(JsSIP.C.LOG_INVITE_SESSION +'invalid SDP');
-        console.warn(e);
+        console.warn(JsSIP.C.LOG_INVITE_SESSION +'invalid SDP: ' + e);
         request.reply(488);
         session.failed('remote', request, JsSIP.C.causes.BAD_MEDIA_DESCRIPTION);
       };
@@ -1105,8 +1101,7 @@ JsSIP.Session.prototype.sendInitialRequest = function(mediaTypes) {
 
   function onMediaFailure(e) {
     if (self.status !== JsSIP.C.SESSION_TERMINATED) {
-      console.warn(JsSIP.C.LOG_INVITE_SESSION +'unable to get user media');
-      console.warn(e);
+      console.warn(JsSIP.C.LOG_INVITE_SESSION +'unable to get user media: ' + e);
       self.failed('local', null, JsSIP.C.causes.USER_DENIED_MEDIA_ACCESS);
     }
   }
