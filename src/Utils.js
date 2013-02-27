@@ -1,5 +1,11 @@
+/**
+ * @fileoverview Utils
+ */
 
-JsSIP.Utils= {
+(function(JsSIP) {
+var Utils;
+
+Utils= {
 
   str_utf8_length: function(string) {
     return window.unescape(encodeURIComponent(string)).length;
@@ -32,7 +38,7 @@ JsSIP.Utils= {
   },
 
   newTag: function() {
-    return JsSIP.Utils.createRandomToken(JsSIP.C.TAG_LENGTH);
+    return JsSIP.Utils.createRandomToken(JsSIP.UA.C.TAG_LENGTH);
   },
 
   // http://stackoverflow.com/users/109538/broofa
@@ -57,7 +63,11 @@ JsSIP.Utils= {
   },
 
   /**
-  * Normalize SIP URI (username required)
+  * Normalize SIP URI.
+  * NOTE: It does not allow a SIP URI without username.
+  * Accepts 'sip', 'sips' and 'tel' URIs and convert them into 'sip'.
+  * Detects the domain part (if given) and properly hex-escapes the user portion.
+  * If the user portion has only 'tel' number symbols the user portion is clean of 'tel' visual separators.
   * @private
   * @param {String} target
   * @param {String} [domain]
@@ -97,11 +107,16 @@ JsSIP.Utils= {
           target_domain = target_array[target_array.length-1];
       }
 
-      target = JsSIP.Utils.escapeUser(target_user) + '@' + target_domain;
+      // Remove the URI scheme (if present).
+      target_user = target_user.replace(/^(sips?|tel):/i, '');
 
-      if (!/^sip:/i.test(target)) {
-        target = JsSIP.C.SIP + ':' + target;
+      // Remove 'tel' visual separators if the user portion just contains 'tel' number symbols.
+      if (/^[\-\.\(\)]*\+?[0-9\-\.\(\)]+$/.test(target_user)) {
+        target_user = target_user.replace(/[\-\.\(\)]/g, '');
       }
+
+      // Build the complete SIP URI.
+      target = JsSIP.C.SIP + ':' + JsSIP.Utils.escapeUser(target_user) + '@' + target_domain;
 
       // Finally parse the resulting URI.
       if (uri = JsSIP.URI.parse(target)) {
@@ -173,15 +188,15 @@ JsSIP.Utils= {
 
   getAllowedMethods: function(ua) {
     var event,
-      allowed = JsSIP.C.ALLOWED_METHODS.split(', ');
+      allowed = JsSIP.UA.C.ALLOWED_METHODS.toString();
 
-    for (event in JsSIP.C.UA_EVENT_METHODS) {
-      if (!ua.checkEvent(event) || ua.listeners(event).length === 0) {
-        allowed.splice(allowed.indexOf(JsSIP.C.UA_EVENT_METHODS[event]), 1);
+    for (event in JsSIP.UA.C.EVENT_METHODS) {
+      if (ua.checkEvent(event) && ua.listeners(event).length > 0) {
+        allowed += ','+ JsSIP.UA.C.EVENT_METHODS[event];
       }
     }
 
-    return allowed.join(', ');
+    return allowed;
   },
 
   // MD5 (Message-Digest Algorithm) http://www.webtoolkit.info
@@ -393,3 +408,6 @@ JsSIP.Utils= {
     return temp.toLowerCase();
   }
 };
+
+JsSIP.Utils = Utils;
+}(JsSIP));
