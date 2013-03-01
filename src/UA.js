@@ -132,7 +132,7 @@ UA.prototype.register = function(options) {
  * ask more than one per session permission
  * to access to media device.
  */
-JsSIP.UA.prototype.setUserMedia = function(stream) {
+UA.prototype.setUserMedia = function(stream) {
   this.localMedia = stream;
   this.emit('gotUserMedia',{stream: stream});
 };

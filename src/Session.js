@@ -998,7 +998,7 @@ Session.prototype.cancel = function(options) {
  * implement DTMF sending using RFC 2976 INFO message
  */
 
-JsSIP.Session.prototype.sendDTMFinfo = function(digit) {
+Session.prototype.sendDTMFinfo = function(digit) {
   var self = this,
       request_sender,
       extraHeaders = [
