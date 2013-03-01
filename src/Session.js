@@ -55,7 +55,6 @@ Session = function(ua) {
   this.expiresTimer = null;
   this.invite2xxTimer = null;
   this.userNoAnswerTimer = null;
-  this.closeTimer = null;
 
   // Session info
   this.direction = null;
@@ -196,35 +195,30 @@ Session.prototype.connect = function(target, views, options) {
 * @private
 */
 Session.prototype.close = function() {
-  if(this.status !== C.STATUS_TERMINATED) {
-    var session = this;
-
-    console.log(LOG_PREFIX +'closing INVITE session ' + this.id);
-
-    // 1st Step. Terminate media.
-    if (this.mediaSession){
-      this.mediaSession.close();
-    }
-
-    // 2nd Step. Terminate signaling.
-
-    // Clear session timers
-    window.clearTimeout(this.ackTimer);
-    window.clearTimeout(this.expiresTimer);
-    window.clearTimeout(this.invite2xxTimer);
-    window.clearTimeout(this.userNoAnswerTimer);
-
-    this.terminateEarlyDialogs();
-    this.terminateConfirmedDialog();
-    this.status = C.STATUS_TERMINATED;
-    this.closeTimer = window.setTimeout(
-      function() {
-        if (session && session.ua.sessions[session.id]) {
-          delete session.ua.sessions[session.id];
-        }
-      }, '5000'
-    );
+  if(this.status === C.STATUS_TERMINATED) {
+    return;
   }
+
+  console.log(LOG_PREFIX +'closing INVITE session ' + this.id);
+
+  // 1st Step. Terminate media.
+  if (this.mediaSession){
+    this.mediaSession.close();
+  }
+
+  // 2nd Step. Terminate signaling.
+
+  // Clear session timers
+  window.clearTimeout(this.ackTimer);
+  window.clearTimeout(this.expiresTimer);
+  window.clearTimeout(this.invite2xxTimer);
+  window.clearTimeout(this.userNoAnswerTimer);
+
+  this.terminateEarlyDialogs();
+  this.terminateConfirmedDialog();
+  this.status = C.STATUS_TERMINATED;
+
+  delete this.ua.sessions[this.id];
 };
 
 /*

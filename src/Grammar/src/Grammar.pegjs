@@ -81,6 +81,9 @@ ctext       = [\x21-\x27] / [\x2A-\x5B] / [\x5D-\x7E] / UTF8_NONASCII / LWS
 quoted_string = SWS DQUOTE ( qdtext / quoted_pair )* DQUOTE {
                   return input.substring(pos, offset); }
 
+quoted_string_clean = SWS DQUOTE ( qdtext / quoted_pair )* DQUOTE {
+                        return input.substring(pos-1, offset+1); }
+
 qdtext  = LWS / "\x21" / [\x23-\x5B] / [\x5D-\x7E] / UTF8_NONASCII
 
 quoted_pair = "\\" ( [\x00-\x09] / [\x0B-\x0C] / [\x0E-\x7F] )
@@ -185,7 +188,7 @@ dec_octet       = "25" [\x30-\x35]          // 250-255
                 / DIGIT                     // 0-9
 
 port            = port: (DIGIT ? DIGIT ? DIGIT ? DIGIT ? DIGIT ?) {
-                    port = parseInt(port.join(""));
+                    port = parseInt(port.join(''));
                     data.port = port;
                     return port; }
 
@@ -235,9 +238,9 @@ other_param       = param: pname value: ( "=" pvalue )? {
                       }
                       data.uri_params[param.toLowerCase()] = value && value.toLowerCase();}
 
-pname             = pname: paramchar + {return pname.join(""); }
+pname             = pname: paramchar + {return pname.join(''); }
 
-pvalue            = pvalue: paramchar + {return pvalue.join(""); }
+pvalue            = pvalue: paramchar + {return pvalue.join(''); }
 
 paramchar         = param_unreserved / unreserved / escaped
 
@@ -346,7 +349,7 @@ extension_method  = token
 Status_Line     = SIP_Version SP Status_Code SP Reason_Phrase
 
 Status_Code     = status_code: extension_code {
-                  data.status_code = parseInt(status_code.join("")); }
+                  data.status_code = parseInt(status_code.join('')); }
 
 extension_code  = DIGIT DIGIT DIGIT
 
@@ -426,7 +429,7 @@ c_p_expires         = "expires"i EQUAL expires: delta_seconds {
 contact_extension   = generic_param
 
 delta_seconds       = delta_seconds: DIGIT+ {
-                        return parseInt(delta_seconds.join("")); }
+                        return parseInt(delta_seconds.join('')); }
 
 qvalue              = "0" ( "." DIGIT? DIGIT? DIGIT? )? {
                         return parseFloat(input.substring(pos, offset)); }
@@ -507,7 +510,7 @@ m_value             = token / quoted_string
 CSeq          = CSeq_value LWS CSeq_method
 
 CSeq_value    = cseq_value: DIGIT + {
-                  data.value=parseInt(cseq_value.join("")); }
+                  data.value=parseInt(cseq_value.join('')); }
 
 CSeq_method   = Method
 
@@ -518,7 +521,7 @@ Expires     = expires: delta_seconds {data = expires; }
 
 
 Event             = event_type: event_type ( SEMI event_param )* {
-                       data.event = event_type.join(''); }
+                       data.event = event_type.join('').toLowerCase(); }
 
 event_type        = event_package ( "." event_template )*
 
@@ -547,7 +550,7 @@ tag_param   = "tag"i EQUAL tag: token {data.tag = tag; }
 //MAX-FORWARDS
 
 Max_Forwards  = forwards: DIGIT+ {
-                  data = parseInt(forwards.join("")); }
+                  data = parseInt(forwards.join('')); }
 
 
 // MIN-EXPIRES
@@ -583,7 +586,7 @@ digest_cln          = realm / domain / nonce / opaque / stale / algorithm
 
 realm               = "realm"i EQUAL realm_value
 
-realm_value         = realm: quoted_string {data.realm = realm; }
+realm_value         = realm: quoted_string_clean { data.realm = realm; }
 
 domain              = "domain"i EQUAL LDQUOT URI ( SP+ URI )* RDQUOT
 
@@ -591,23 +594,21 @@ URI                 = absoluteURI / abs_path
 
 nonce               = "nonce"i EQUAL nonce_value
 
-nonce_value         = nonce: quoted_string {data.nonce=nonce; }
+nonce_value         = nonce: quoted_string_clean { data.nonce=nonce; }
 
-opaque              = "opaque"i EQUAL opaque: quoted_string {
-                        data.opaque=opaque; }
+opaque              = "opaque"i EQUAL opaque: quoted_string_clean { data.opaque=opaque; }
 
-stale               = "stale"i EQUAL stale: ( "true"i / "false"i ) {
-                        data.stale=stale; }
+stale               = "stale"i EQUAL ( "true"i { data.stale=true; } / "false"i { data.stale=false; } )
 
 algorithm           = "algorithm"i EQUAL algorithm: ( "MD5"i / "MD5-sess"i
                       / token ) {
-                      data.algorithm=algorithm; }
+                      data.algorithm=algorithm.toUpperCase(); }
 
-qop_options         = "qop"i EQUAL LDQUOT qop: (qop_value
-                      ("," qop_value)*) RDQUOT {
-                      data.qop= input.substring(pos-1, offset+5); }
+qop_options         = "qop"i EQUAL LDQUOT (qop_value ("," qop_value)*) RDQUOT
 
-qop_value           = "auth-int"i / "auth"i / token
+qop_value           = qop_value: ( "auth-int"i / "auth"i / token ) {
+                        data.qop || (data.qop=[]);
+                        data.qop.push(qop_value.toLowerCase()); }
 
 
 // PROXY-REQUIRE
@@ -739,7 +740,7 @@ via_branch        = "branch"i EQUAL via_branch: token {
 
 response_port     = "rport"i (EQUAL response_port: (DIGIT*) )? {
                       if(typeof response_port !== 'undefined')
-                        data.rport = response_port.join(""); }
+                        data.rport = response_port.join(''); }
 
 via_extension     = generic_param
 
@@ -759,10 +760,10 @@ via_host          = ( hostname / IPv4address / IPv6reference ) {
                       data.host = input.substring(pos, offset); }
 
 via_port          = via_sent_by_port: (DIGIT ? DIGIT ? DIGIT ? DIGIT ? DIGIT ?) {
-                      data.port = parseInt(via_sent_by_port.join("")); }
+                      data.port = parseInt(via_sent_by_port.join('')); }
 
 ttl               = ttl: (DIGIT DIGIT ? DIGIT ?) {
-                      return parseInt(ttl.join("")); }
+                      return parseInt(ttl.join('')); }
 
 
 // WWW-AUTHENTICATE
