@@ -669,7 +669,7 @@ UA.prototype.recoverTransport = function(ua) {
  */
 UA.prototype.loadConfig = function(configuration) {
   // Settings and default values
-  var parameter, value, checked_value, hostport_params,
+  var parameter, value, checked_value, hostport_params, registrar_server,
     settings = {
       /* Host address
       * Value to be set in Via sent_by and host part of Contact FQDN
@@ -683,6 +683,7 @@ UA.prototype.loadConfig = function(configuration) {
       register_expires: 600,
       register_min_expires: 120,
       register: true,
+      registrar_server: null,
 
       // Transport related parameters
       ws_server_max_reconnection: 3,
@@ -775,6 +776,13 @@ UA.prototype.loadConfig = function(configuration) {
     settings.authorization_user = settings.uri.user;
   }
 
+  /* If no 'registrar_server' is set use the 'uri' value without user portion. */
+  if (!settings.registrar_server) {
+    registrar_server = settings.uri.clone();
+    registrar_server.user = null;
+    settings.registrar_server = registrar_server;
+  }
+
   // User no_answer_timeout
   settings.no_answer_timeout = settings.no_answer_timeout * 1000;
 
@@ -814,10 +822,13 @@ UA.prototype.loadConfig = function(configuration) {
   // Fill the value of the configuration_skeleton
   console.log(LOG_PREFIX + 'configuration parameters after validation:');
   for(parameter in settings) {
-    if (parameter !== 'uri') {
-      console.log('· ' + parameter + ': ' + window.JSON.stringify(settings[parameter]));
-    } else {
-      console.log('· ' + parameter + ': ' + settings[parameter]);
+    switch(parameter) {
+      case 'uri':
+      case 'registrar_server':
+        console.log('· ' + parameter + ': ' + settings[parameter]);
+        break;
+      default:
+        console.log('· ' + parameter + ': ' + window.JSON.stringify(settings[parameter]));
     }
     UA.configuration_skeleton[parameter].value = settings[parameter];
   }
@@ -863,6 +874,7 @@ UA.configuration_skeleton = (function() {
       "no_answer_timeout", // 30 seconds.
       "password",
       "register_expires", // 600 seconds.
+      "registrar_server",
       "stun_servers",
       "trace_sip",
       "turn_servers",
@@ -1055,6 +1067,23 @@ UA.configuration_check = {
         if (value > 0) {
           return value;
         }
+      }
+    },
+
+    registrar_server: function(registrar_server) {
+      var parsed;
+
+      if (!/^sip:/i.test(registrar_server)) {
+        registrar_server = JsSIP.C.SIP + ':' + registrar_server;
+      }
+      parsed = JsSIP.URI.parse(registrar_server);
+
+      if(!parsed) {
+        return;
+      } else if(parsed.user) {
+        return;
+      } else {
+        return parsed;
       }
     },
 
