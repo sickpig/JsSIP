@@ -9,7 +9,7 @@
  */
 (function(JsSIP) {
 var UA,
-  LOG_PREFIX = JsSIP.name() +' | '+ 'UA' +' | ',
+  LOG_PREFIX = JsSIP.name +' | '+ 'UA' +' | ',
   C = {
     // UA status codes
     STATUS_INIT :                0,
@@ -26,7 +26,7 @@ var UA,
      * corresponding event handler is set.
      */
     EVENT_METHODS: {
-      'newSession': 'INVITE',
+      'newRTCSession': 'INVITE',
       'newMessage': 'MESSAGE'
     },
 
@@ -55,7 +55,7 @@ UA = function(configuration) {
     'registered',
     'unregistered',
     'registrationFailed',
-    'newSession',
+    'newRTCSession',
     'newMessage'
   ];
 
@@ -169,11 +169,11 @@ UA.prototype.isConnected = function() {
  * @throws {TypeError}
  *
  */
-UA.prototype.call = function(target, views, options) {
+UA.prototype.call = function(target, options) {
   var session;
 
-  session = new JsSIP.Session(this);
-  session.connect(target, views, options);
+  session = new JsSIP.RTCSession(this);
+  session.connect(target, options);
 };
 
 /**
@@ -450,7 +450,7 @@ UA.prototype.receiveRequest = function(request) {
     switch(method) {
       case JsSIP.C.INVITE:
         if(JsSIP.WebRTC.isSupported) {
-          session = new JsSIP.Session(this);
+          session = new JsSIP.RTCSession(this);
           session.init_incoming(request);
         } else {
           console.warn(LOG_PREFIX +'INVITE received but WebRTC is not supported');
@@ -1020,11 +1020,7 @@ UA.configuration_check = {
     },
 
     password: function(password) {
-      if(JsSIP.Grammar.parse(password, 'password') === -1) {
-        return;
-      } else {
-        return password;
-      }
+      return String(password);
     },
 
     register: function(register) {

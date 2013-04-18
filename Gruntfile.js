@@ -3,7 +3,7 @@
 module.exports = function(grunt) {
 
   var srcFiles = [
-    'src/head.js',
+    'src/JsSIP.js',
     'src/EventEmitter.js',
     'src/Constants.js',
     'src/Exceptions.js',
@@ -18,69 +18,93 @@ module.exports = function(grunt) {
     'src/RequestSender.js',
     'src/InDialogRequestSender.js',
     'src/Registrator.js',
-    'src/Session.js',
-    'src/MediaSession.js',
+    'src/RTCSession.js',
     'src/Message.js',
     'src/UA.js',
     'src/Utils.js',
     'src/SanityCheck.js',
     'src/DigestAuthentication.js',
-    'src/WebRTC.js',
-    'src/tail.js'
+    'src/WebRTC.js'
   ];
 
   // Project configuration.
   grunt.initConfig({
-    pkg: '<json:package.json>',
+    pkg: grunt.file.readJSON('package.json'),
     meta: {
-      banner: '/*! jsSIP v@<%= pkg.version %> http://jssip.net | http://jssip.net/license */'
-    },
-    lint: {
-      dist: 'dist/<%= pkg.name %>-<%= pkg.version %>.js',
-      devel: 'dist/<%= pkg.name %>-devel.js'
+      banner: '\
+/*\n\
+ * JsSIP version <%= pkg.version %>\n\
+ * Copyright (c) 2012-<%= grunt.template.today("yyyy") %> José Luis Millán - Versatica <http://www.versatica.com>\n\
+ * Homepage: http://jssip.net\n\
+ * License: http://jssip.net/license\n\
+ */\n\n\n',
+      footer: '\
+\n\n\nwindow.JsSIP = JsSIP;\n\
+}(window));\n\n'
     },
     concat: {
       dist: {
         src: srcFiles,
-        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
+        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js',
+        options: {
+          banner: '<%= meta.banner %>',
+          separator: '\n\n\n',
+          footer: '<%= meta.footer %>',
+          process: true
+        },
+        nonull: true
       },
-      devel: {
-        src: srcFiles,
-        dest: 'dist/<%= pkg.name %>-devel.js'
-      },
-      post: {
+      post_dist: {
         src: [
           'dist/<%= pkg.name %>-<%= pkg.version %>.js',
           'src/Grammar/dist/Grammar.js'
         ],
-        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
+        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js',
+        nonull: true
       },
-      post_min: {
-        src: [
-          'dist/<%= pkg.name %>-<%= pkg.version %>.min.js',
-          'src/Grammar/dist/Grammar.min.js'
-        ],
-        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.min.js'
+      devel: {
+        src: srcFiles,
+        dest: 'dist/<%= pkg.name %>-devel.js',
+        options: {
+          banner: '<%= meta.banner %>',
+          separator: '\n\n\n',
+          footer: '<%= meta.footer %>',
+          process: true
+        },
+        nonull: true
       },
       post_devel: {
         src: [
           'dist/<%= pkg.name %>-devel.js',
           'src/Grammar/dist/Grammar.js'
         ],
-        dest: 'dist/<%= pkg.name %>-devel.js'
+        dest: 'dist/<%= pkg.name %>-devel.js',
+        nonull: true
+      },
+      post_uglify: {
+        src: [
+          'dist/<%= pkg.name %>-<%= pkg.version %>.min.js',
+          'src/Grammar/dist/Grammar.min.js'
+        ],
+        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.min.js',
+        nonull: true
       }
     },
-    min: {
+    includereplace: {
       dist: {
-        src: ['<banner:meta.banner>', '<config:concat.dist.dest>'],
-        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.min.js'
+        files: {
+          'dist': 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
+        }
+      },
+      devel: {
+        files: {
+          'dist': 'dist/<%= pkg.name %>-devel.js'
+        }
       }
-    },
-    watch: {
-      files: '<config:lint.files>',
-      tasks: 'lint test'
     },
     jshint: {
+      dist: 'dist/<%= pkg.name %>-<%= pkg.version %>.js',
+      devel: 'dist/<%= pkg.name %>-devel.js',
       options: {
         browser: true,
         curly: true,
@@ -99,11 +123,28 @@ module.exports = function(grunt) {
       },
       globals: {}
     },
+    uglify: {
+      dist: {
+        files: {
+          'dist/<%= pkg.name %>-<%= pkg.version %>.min.js': ['dist/<%= pkg.name %>-<%= pkg.version %>.js']
+        }
+      },
+      options: {
+        banner: '<%= meta.banner %>'
+      }
+    },
     qunit: {
       noWebRTC: ['test/run-TestNoWebRTC.html']
-    },
-    uglify: {}
+    }
   });
+
+
+  // Load Grunt plugins.
+  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-include-replace');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-qunit');
 
 
   // Task for building JsSIP Grammar.js and Grammar.min.js files.
@@ -143,13 +184,14 @@ module.exports = function(grunt) {
     });
   });
 
+
   // Task for building jssip-devel.js (uncompressed), jssip-X.Y.Z.js (uncompressed)
   // and jssip-X.Y.Z.min.js (minified).
   // Both jssip-devel.js and jssip-X.Y.Z.js are the same file with different name.
-  grunt.registerTask('build', ['concat:devel', 'lint:devel', 'concat:post_devel', 'concat:dist', 'lint:dist', 'min:dist', 'concat:post', 'concat:post_min']);
+  grunt.registerTask('build', ['concat:devel', 'includereplace:devel', 'jshint:devel', 'concat:post_devel', 'concat:dist', 'includereplace:dist', 'jshint:dist', 'uglify:dist', 'concat:post_dist', 'concat:post_uglify']);
 
   // Task for building jssip-devel.js (uncompressed).
-  grunt.registerTask('devel', ['concat:devel', 'lint:devel', 'concat:post_devel']);
+  grunt.registerTask('devel', ['concat:devel', 'includereplace:devel', 'jshint:devel', 'concat:post_devel']);
 
   // Test tasks.
   grunt.registerTask('testNoWebRTC', ['qunit:noWebRTC']);
