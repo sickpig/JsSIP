@@ -6,17 +6,27 @@
 var WebRTC;
 
 WebRTC = {};
-
-// getUserMedia
-if (window.navigator.webkitGetUserMedia) {
-  WebRTC.getUserMedia = window.navigator.webkitGetUserMedia.bind(navigator);
-}
-else if (window.navigator.mozGetUserMedia) {
-  WebRTC.getUserMedia = window.navigator.mozGetUserMedia.bind(navigator);
-}
-else if (window.navigator.getUserMedia) {
-  WebRTC.getUserMedia = window.navigator.getUserMedia.bind(navigator);
-}
+WebRTC.localMedia = null;
+WebRTC.getUserMedia = function(constraints,onSuccess,onFailure){
+  if(WebRTC.localMedia==null){
+    if (window.navigator.webkitGetUserMedia){
+      WebRTC.userMedia = window.navigator.webkitGetUserMedia.bind(navigator);
+    }else if (window.navigator.mozGetUserMedia){
+      WebRTC.userMedia = window.navigator.mozGetUserMedia.bind(navigator);
+    }else if (window.navigator.getUserMedia){
+      WebRTC.userMedia = window.navigator.getUserMedia.bind(navigator);
+    }
+    WebRTC.userMedia(constraints,
+      function(stream){
+        WebRTC.localMedia = stream;
+        onSuccess(stream);
+      },
+      onFailure
+    );
+  }else{
+    onSuccess(WebRTC.localMedia);
+  }
+};
 
 // RTCPeerConnection
 if (window.webkitRTCPeerConnection) {

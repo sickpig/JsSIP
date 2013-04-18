@@ -230,6 +230,10 @@ UA.prototype.stop = function() {
     function() { ua.transport.disconnect(); },
     '5000'
   );
+
+  if(JsSIP.WebRTC.localMedia!=null){
+    JsSIP.WebRTC.localMedia.stop();
+  }
 };
 
 /**

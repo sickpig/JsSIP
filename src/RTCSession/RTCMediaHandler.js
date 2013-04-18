@@ -162,10 +162,6 @@ RTCMediaHandler.prototype = {
     console.log(LOG_PREFIX + 'closing PeerConnection');
     if(this.peerConnection) {
       this.peerConnection.close();
-
-      if(this.localMedia) {
-        this.localMedia.stop();
-      }
     }
   },
 
