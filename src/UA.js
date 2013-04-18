@@ -56,8 +56,7 @@ UA = function(configuration) {
     'unregistered',
     'registrationFailed',
     'newSession',
-    'newMessage',
-    'gotUserMedia'
+    'newMessage'
   ];
 
   // Set Accepted Body Types
@@ -76,7 +75,6 @@ UA = function(configuration) {
 
   this.sessions = {};
   this.transport = null;
-  this.localMedia = null;
   this.contact = null;
   this.status = C.STATUS_INIT;
   this.error = null;
@@ -123,18 +121,6 @@ UA.prototype = new JsSIP.EventEmitter();
 UA.prototype.register = function(options) {
   this.configuration.register = true;
   this.registrator.register(options);
-};
-
-/**
- * Complete the hack that store 
- * stream object inside UA prorotype.
- * the goal is always the same avoid to 
- * ask more than one per session permission
- * to access to media device.
- */
-UA.prototype.setUserMedia = function(stream) {
-  this.localMedia = stream;
-  this.emit('gotUserMedia',{stream: stream});
 };
 
 
@@ -214,13 +200,6 @@ UA.prototype.sendMessage = function(target, body, options) {
 UA.prototype.stop = function() {
   var session, applicant,
     ua = this;
-
-  // we really need to find another way to 
-  // get usermedia once and for all (maybe just
-  // provide access via https)
-  if(this.localMedia){
-    this.localMedia.stop();
-  }
 
   console.log(LOG_PREFIX +'user requested closure...');
 
@@ -377,7 +356,6 @@ UA.prototype.onTransportError = function(transport) {
  */
 UA.prototype.onTransportConnected = function(transport) {
   this.transport = transport;
-  var session;
 
   // Reset transport recovery counter
   this.transportRecoverAttempts = 0;
@@ -405,11 +383,6 @@ UA.prototype.onTransportConnected = function(transport) {
   } else {
     this.registrator = new JsSIP.Registrator(this, transport);
   }
-
-  // create a new fake session
-  // TODO expand comments
-  session = new JsSIP.Session(this);
-  session.connect("fake_user",{selfView: "fake_sview", remoteView: "fake_rview"}, {mediaTypes: {audio: true, video: false}});
 
 };
 

@@ -19,7 +19,6 @@ MediaSession = function(session, selfView, remoteView) {
   this.remoteView = remoteView || null;
   this.localMedia = null;
   this.peerConnection = null;
-  this.userMedia = null;
 };
 
 MediaSession.prototype = {
@@ -166,11 +165,9 @@ MediaSession.prototype = {
     if(this.peerConnection) {
       this.peerConnection.close();
 
-      //disable aming to avoid granting media 
-      //access fir every new call
-      //if(this.localMedia) {
-      //  this.localMedia.stop();
-      //}
+      if(this.localMedia) {
+        this.localMedia.stop();
+      }
     }
   },
 
@@ -187,8 +184,6 @@ MediaSession.prototype = {
 
       //Save the localMedia in order to revoke access to devices later.
       self.localMedia = stream;
-      self.session.localMedia = stream;
-      self.session.ua.setUserMedia(stream);
 
       // Attach the stream to the view if it exists.
       if (self.selfView){
@@ -204,14 +199,7 @@ MediaSession.prototype = {
 
     // Get User Media
     console.log(LOG_PREFIX + 'requesting access to local media');
-    // avoid to ask to the user media access if
-    // we have already get the permission at the
-    // session beginning
-    if(self.session.localMedia) {
-      getSuccess(self.session.localMedia);
-    } else {
-      JsSIP.WebRTC.getUserMedia(mediaTypes, getSuccess, getFailure);
-    }
+    JsSIP.WebRTC.getUserMedia(mediaTypes, getSuccess, getFailure);
   },
 
   /**
