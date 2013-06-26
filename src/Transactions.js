@@ -139,7 +139,10 @@ var InviteClientTransactionPrototype = function() {
     window.clearTimeout(this.D);
     window.clearTimeout(this.M);
     delete this.request_sender.ua.transactions.ict[this.id];
-    this.request_sender.onTransportError();
+
+    if (this.state !== C.STATUS_ACCEPTED) {
+      this.request_sender.onTransportError();
+    }
   };
 
   // RFC 6026 7.2
@@ -632,6 +635,7 @@ Transactions.checkTransaction = function(ua, request) {
     case JsSIP.C.CANCEL:
       tr = ua.transactions.ist[request.via_branch];
       if(tr) {
+        request.reply_sl(200);
         if(tr.state === C.STATUS_PROCEEDING) {
           return false;
         } else {
