@@ -58,6 +58,7 @@ RTCSession = function(ua) {
   this.remote_identity = null;
   this.start_time = null;
   this.end_time = null;
+  this.tones = null;
 
   // Custom session empty object for high level use
   this.data = {};
@@ -197,6 +198,8 @@ RTCSession.prototype.answer = function(options) {
       var
         // run for reply success callback
         replySucceeded = function() {
+          var timeout = JsSIP.Timers.T1;
+
           self.status = C.STATUS_WAITING_FOR_ACK;
 
           /**
@@ -204,27 +207,24 @@ RTCSession.prototype.answer = function(options) {
            * Response retransmissions cannot be accomplished by transaction layer
            *  since it is destroyed when receiving the first 2xx answer
            */
-          self.timers.invite2xxTimer = window.setTimeout(function invite2xxRetransmission(retransmissions) {
-              retransmissions = retransmissions || 1;
-
-              var timeout = JsSIP.Timers.T1 * (Math.pow(2, retransmissions));
-
-              if((retransmissions * JsSIP.Timers.T1) <= JsSIP.Timers.T2) {
-                retransmissions += 1;
-
-                request.reply(200, null, ['Contact: '+ self.contact], body);
-
-                self.timers.invite2xxTimer = window.setTimeout(
-                  function() {
-                    invite2xxRetransmission(retransmissions);
-                  },
-                  timeout
-                );
-              } else {
-                window.clearTimeout(self.timers.invite2xxTimer);
+          self.timers.invite2xxTimer = window.setTimeout(function invite2xxRetransmission() {
+              if (self.status !== C.STATUS_WAITING_FOR_ACK) {
+                return;
               }
+
+              request.reply(200, null, ['Contact: '+ self.contact], body);
+
+              if (timeout < JsSIP.Timers.T2) {
+                timeout = timeout * 2;
+                if (timeout > JsSIP.Timers.T2) {
+                  timeout = JsSIP.Timers.T2;
+                }
+              }
+              self.timers.invite2xxTimer = window.setTimeout(
+                invite2xxRetransmission, timeout
+              );
             },
-            JsSIP.Timers.T1
+            timeout
           );
 
           /**
@@ -299,12 +299,12 @@ RTCSession.prototype.answer = function(options) {
  * @param {Object} [options]
  */
 RTCSession.prototype.sendDTMF = function(tones, options) {
-  var timer, interToneGap,
-    possition = 0,
-    self = this,
-    ready = true;
+  var duration, interToneGap,
+    position = 0,
+    self = this;
 
   options = options || {};
+  duration = options.duration || null;
   interToneGap = options.interToneGap || null;
 
   if (tones === undefined) {
@@ -317,11 +317,27 @@ RTCSession.prototype.sendDTMF = function(tones, options) {
   }
 
   // Check tones
-  if (!tones || (typeof tones !== 'string' && typeof tones !== 'number') || !tones.toString().match(/^[0-9A-D#*]+$/i)) {
+  if (!tones || (typeof tones !== 'string' && typeof tones !== 'number') || !tones.toString().match(/^[0-9A-D#*,]+$/i)) {
     throw new TypeError('Invalid tones: '+ tones);
   }
 
   tones = tones.toString();
+
+  // Check duration
+  if (duration && !JsSIP.Utils.isDecimal(duration)) {
+    throw new TypeError('Invalid tone duration: '+ duration);
+  } else if (!duration) {
+    duration = DTMF.C.DEFAULT_DURATION;
+  } else if (duration < DTMF.C.MIN_DURATION) {
+    console.warn(LOG_PREFIX +'"duration" value is lower than the minimum allowed, setting it to '+ DTMF.C.MIN_DURATION+ ' milliseconds');
+    duration = DTMF.C.MIN_DURATION;
+  } else if (duration > DTMF.C.MAX_DURATION) {
+    console.warn(LOG_PREFIX +'"duration" value is greater than the maximum allowed, setting it to '+ DTMF.C.MAX_DURATION +' milliseconds');
+    duration = DTMF.C.MAX_DURATION;
+  } else {
+    duration = Math.abs(duration);
+  }
+  options.duration = duration;
 
   // Check interToneGap
   if (interToneGap && !JsSIP.Utils.isDecimal(interToneGap)) {
@@ -335,32 +351,43 @@ RTCSession.prototype.sendDTMF = function(tones, options) {
     interToneGap = Math.abs(interToneGap);
   }
 
-  function sendDTMF() {
-    var tone,
-      dtmf = new DTMF(self);
-
-    dtmf.on('failed', function(){ready = false;});
-
-    tone = tones[possition];
-    possition += 1;
-
-    dtmf.send(tone, options);
+  if (this.tones) {
+    // Tones are already queued, just add to the queue
+    this.tones += tones;
+    return;
   }
+
+  // New set of tones to start sending
+  this.tones = tones;
+
+  var sendDTMF = function () {
+    var tone, timeout,
+      tones = self.tones;
+
+    if (self.status === C.STATUS_TERMINATED || !tones || position >= tones.length) {
+      // Stop sending DTMF
+      self.tones = null;
+      return;
+    }
+
+    tone = tones[position];
+    position += 1;
+
+    if (tone === ',') {
+      timeout = 2000;
+    } else {
+      var dtmf = new DTMF(self);
+      dtmf.on('failed', function(){self.tones = null;});
+      dtmf.send(tone, options);
+      timeout = duration + interToneGap;
+    }
+
+    // Set timeout for the next tone
+    window.setTimeout(sendDTMF, timeout);
+  };
 
   // Send the first tone
   sendDTMF();
-
-  // Send the following tones
-  timer = window.setInterval(
-    function() {
-      if (self.status !== C.STATUS_TERMINATED && ready && tones.length > possition) {
-          sendDTMF();
-      } else {
-        window.clearInterval(timer);
-      }
-    },
-    interToneGap
-  );
 };
 
 
@@ -425,7 +452,9 @@ RTCSession.prototype.init_incoming = function(request) {
   }
 
   //Initialize Media Session
-  this.rtcMediaHandler = new RTCMediaHandler(this);
+  this.rtcMediaHandler = new RTCMediaHandler(this,
+    {"optional": [{'DtlsSrtpKeyAgreement': 'true'}]}
+  );
   this.rtcMediaHandler.onMessage(
     'offer',
     request.body,
@@ -851,8 +880,8 @@ RTCSession.prototype.receiveResponse = function(response) {
          * SDP Answer fits with Offer. Media will start
          */
         function() {
-          session.sendACK();
           session.status = C.STATUS_CONFIRMED;
+          session.sendACK();
           session.started('remote', response);
         },
         /*

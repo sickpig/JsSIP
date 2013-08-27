@@ -78,7 +78,7 @@ RTCMediaHandler.prototype = {
   setLocalDescription: function(sessionDescription, onFailure) {
     this.peerConnection.setLocalDescription(
       sessionDescription,
-      null,
+      function(){},
       function(e) {
         console.error(LOG_PREFIX +'unable to set local description');
         console.error(e);
@@ -137,7 +137,7 @@ RTCMediaHandler.prototype = {
     this.peerConnection.onicecandidate = function(e) {
       if (e.candidate) {
         console.log(LOG_PREFIX +'ICE candidate received: '+ e.candidate.candidate);
-      } else {
+      } else if (self.onIceCompleted !== undefined) {
         self.onIceCompleted();
       }
     };
